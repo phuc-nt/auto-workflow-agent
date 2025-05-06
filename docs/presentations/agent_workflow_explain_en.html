@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Workflow Explain</title>
+  <script src="./assets/js/go.js"></script>
+  <link rel="stylesheet" href="./assets/css/font-awesome.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .content-wrapper {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+    }
+    .diagram-panel {
+      flex: 1;
+      min-width: 0;
+    }
+    .info-panel {
+      flex: 0 0 400px;
+      height: 700px;
+      display: flex;
+      flex-direction: column;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      padding: 15px;
+      overflow: hidden;
+    }
+    #myDiagramDiv {
+      width: 100%;
+      height: 700px;
+      border: 1px solid #d3d3d3;
+      background-color: #fff;
+    }
+    .buttons {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .control-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      margin: 0 10px;
+      font-size: 20px;
+      cursor: pointer;
+      color: white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .control-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+    .control-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .btn-start {
+      background-color: #52c41a;
+    }
+    .btn-pause {
+      background-color: #faad14;
+    }
+    .btn-continue {
+      background-color: #1890ff;
+    }
+    .btn-reset {
+      background-color: #ff4d4f;
+    }
+    .btn-start:hover {
+      background-color: #389e0d;
+    }
+    .btn-pause:hover {
+      background-color: #d48806;
+    }
+    .btn-continue:hover {
+      background-color: #096dd9;
+    }
+    .btn-reset:hover {
+      background-color: #cf1322;
+    }
+    .control-btn:disabled {
+      background-color: #d9d9d9;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .details-section {
+      margin-bottom: 20px;
+    }
+    #message {
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+      font-family: monospace;
+      min-height: 60px;
+      margin-top: 10px;
+    }
+    .log-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .log {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+    .log-item {
+      margin-bottom: 5px;
+      padding: 5px;
+      border-radius: 3px;
+    }
+    .log-user {
+      background-color: #e6f7ff;
+      border-left: 3px solid #1890ff;
+    }
+    .log-planning {
+      background-color: #f6ffed;
+      border-left: 3px solid #52c41a;
+    }
+    .log-jira {
+      background-color: #fff1f0;
+      border-left: 3px solid #ff4d4f;
+    }
+    .log-slack {
+      background-color: #fffbe6;
+      border-left: 3px solid #faad14;
+    }
+    .log-confluence {
+      background-color: #f9f0ff;
+      border-left: 3px solid #722ed1;
+    }
+    .node-details {
+      max-width: 200px;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .node-active {
+      font-weight: bold;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Agent Workflow Explain</h1>
+    
+    <div class="buttons">
+      <button id="startDemo" class="control-btn btn-start" title="Start Demo">
+        <i class="fas fa-play"></i>
+      </button>
+      <button id="pauseDemo" class="control-btn btn-pause" disabled title="Pause">
+        <i class="fas fa-pause"></i>
+      </button>
+      <button id="continueDemo" class="control-btn btn-continue" disabled title="Continue">
+        <i class="fas fa-forward"></i>
+      </button>
+      <button id="resetDemo" class="control-btn btn-reset" title="Reset">
+        <i class="fas fa-redo"></i>
+      </button>
+    </div>
+    
+    <div class="content-wrapper">
+      <div class="diagram-panel">
+        <div id="myDiagramDiv"></div>
+      </div>
+      
+      <div class="info-panel">
+        <div class="details-section">
+          <h3>Action Details:</h3>
+          <div id="message">Select "Start Demo" to begin.</div>
+        </div>
+        
+        <div class="log-section">
+          <h3>Execution Log:</h3>
+          <div id="log" class="log"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize diagram
+    const $ = go.GraphObject.make;
+    
+    const myDiagram = new go.Diagram("myDiagramDiv", {
+      "undoManager.isEnabled": true,
+      "initialAutoScale": go.Diagram.Uniform,
+      "initialContentAlignment": go.Spot.Center,
+      // Disable automatic layout and add fixedBounds
+      layout: $(go.LayeredDigraphLayout, { 
+        isInitial: false,  // Don't use layout on initialization
+        isOngoing: false,  // Don't automatically apply layout
+        direction: 90,
+        layerSpacing: 50,
+        columnSpacing: 30,
+        setsPortSpots: false
+      })
+    });
+    
+    // Define template for nodes
+    myDiagram.nodeTemplate =
+      $(go.Node, "Auto",
+        { 
+          selectionAdorned: false, 
+          resizable: false,
+          locationSpot: go.Spot.Center, // Add locationSpot
+          movable: false  // Don't allow moving nodes
+        },
+        $(go.Shape, "RoundedRectangle", {
+          fill: "white", strokeWidth: 2,
+          portId: "", fromLinkable: true, toLinkable: true, cursor: "pointer",
+          stroke: "gray",
+          name: "SHAPE"  // Add name for easier access to shape object
+        },
+        new go.Binding("fill", "color"),
+        new go.Binding("stroke", "borderColor")),
+        $(go.Panel, "Vertical",
+          { margin: 8 },
+          $(go.TextBlock, 
+            { 
+              margin: new go.Margin(0, 0, 5, 0),
+              font: "bold 14px sans-serif", 
+              stroke: "#333",
+              alignment: go.Spot.Center
+            },
+            new go.Binding("text", "name")),
+          $(go.Panel, "Vertical",
+            { 
+              background: "white", 
+              margin: new go.Margin(5, 0, 0, 0),
+              maxSize: new go.Size(200, NaN)
+            },
+            new go.Binding("visible", "showDetails"),
+            $(go.TextBlock, 
+              { 
+                margin: 5,
+                font: "12px sans-serif",
+                stroke: "#555",
+                wrap: go.TextBlock.WrapFit,
+                alignment: go.Spot.Left,
+                name: "DETAILS"  // Add name for realtime updates
+              },
+              new go.Binding("text", "details")),
+            $(go.TextBlock, 
+              { 
+                margin: 5,
+                font: "12px sans-serif",
+                stroke: "#e91e63",
+                wrap: go.TextBlock.WrapFit,
+                alignment: go.Spot.Left,
+                name: "CURRENT_ACTION",
+                visible: false  // Initially hidden
+              })
+          )
+        )
+      );
+    
+    // Define template for links
+    myDiagram.linkTemplate =
+      $(go.Link,
+        { 
+          routing: go.Link.AvoidsNodes,
+          curve: go.Link.JumpOver,
+          corner: 10,
+          toShortLength: 4
+        },
+        $(go.Shape, 
+          { strokeWidth: 2, stroke: "#555", name: "SHAPE" },
+          new go.Binding("stroke", "color")),
+        $(go.Shape, 
+          { toArrow: "Standard", stroke: "#555", fill: "#555" },
+          new go.Binding("stroke", "color"),
+          new go.Binding("fill", "color")),
+        $(go.Panel, "Auto",
+          { segmentOffset: new go.Point(0, 0) },
+          $(go.Shape, "RoundedRectangle", {
+            fill: "white", 
+            stroke: "gray",
+            minSize: new go.Size(50, 20)
+          }),
+          $(go.TextBlock, {
+            margin: 5,
+            font: "11px sans-serif",
+            stroke: "#333",
+            textAlign: "center"
+          },
+          new go.Binding("text", "text"))
+        )
+      );
+    
+    // Create data for nodes with fixed positions
+    const nodeDataArray = [
+      { 
+        key: "user", 
+        name: "User", 
+        details: "Input",
+        color: "#f5f5f5", 
+        activeColor: "#e6f7ff",
+        borderColor: "#d9d9d9",
+        activeBorderColor: "#1890ff",
+        showDetails: true,
+        // Node position from image
+        loc: "370 85"
+      },
+      { 
+        key: "planning", 
+        name: "Planning Agent", 
+        details: "Analyze message and plan",
+        color: "#f5f5f5", 
+        activeColor: "#f6ffed",
+        borderColor: "#d9d9d9",
+        activeBorderColor: "#52c41a",
+        showDetails: true,
+        // Node position from image
+        loc: "370 255"
+      },
+      { 
+        key: "action_plan", 
+        name: "Action Plan", 
+        details: "",  // Start with empty details
+        color: "#f0f7ff", 
+        activeColor: "#f0f7ff",
+        borderColor: "#91caff",
+        activeBorderColor: "#1677ff",
+        showDetails: true,
+        // Node position from image
+        loc: "617 128"
+      },
+      { 
+        key: "jira", 
+        name: "Jira Agent", 
+        details: "Interact with Jira API",
+        color: "#f5f5f5", 
+        activeColor: "#fff1f0",
+        borderColor: "#d9d9d9",
+        activeBorderColor: "#ff4d4f",
+        showDetails: true,
+        // Node position from image
+        loc: "106 394"
+      },
+      { 
+        key: "slack", 
+        name: "Slack Agent", 
+        details: "Interact with Slack API",
+        color: "#f5f5f5", 
+        activeColor: "#fffbe6",
+        borderColor: "#d9d9d9",
+        activeBorderColor: "#faad14",
+        showDetails: true,
+        // Node position from image
+        loc: "370 514"
+      },
+      { 
+        key: "confluence", 
+        name: "Confluence Agent", 
+        details: "Interact with Confluence API",
+        color: "#f5f5f5", 
+        activeColor: "#f9f0ff",
+        borderColor: "#d9d9d9",
+        activeBorderColor: "#722ed1",
+        showDetails: true,
+        // Node position from image
+        loc: "634 391"
+      }
+    ];
+    
+    // Create data for links
+    const linkDataArray = [
+      { from: "user", to: "planning", color: "#1890ff", text: "input" },
+      { from: "planning", to: "action_plan", color: "#52c41a", text: "create" },
+      { from: "planning", to: "jira", color: "#52c41a", text: "command" },
+      { from: "planning", to: "slack", color: "#52c41a", text: "command" },
+      { from: "planning", to: "confluence", color: "#52c41a", text: "command" }
+    ];
+    
+    // Avoid duplicate links
+    function avoidDuplicateLinks(model) {
+      const linkKeys = {};
+      for (let i = 0; i < model.linkDataArray.length; i++) {
+        const ld = model.linkDataArray[i];
+        const key = ld.from + "~" + ld.to + "~" + (ld.text || "");
+        if (linkKeys[key]) {
+          model.removeLinkData(ld);
+          i--;
+        } else {
+          linkKeys[key] = true;
+        }
+      }
+    }
+    
+    // Initialize model with data
+    myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
+    avoidDuplicateLinks(myDiagram.model);
+
+    // Set position for each node
+    myDiagram.nodes.each(node => {
+      const data = node.data;
+      if (data.loc) {
+        const pos = go.Point.parse(data.loc);
+        node.location = pos;
+      }
+    });
+  
+    // Ensure DOM is loaded
+    document.addEventListener("DOMContentLoaded", function() {
+      const startDemoButton = document.getElementById("startDemo");
+      const pauseDemoButton = document.getElementById("pauseDemo");
+      const continueDemoButton = document.getElementById("continueDemo");
+      const resetDemoButton = document.getElementById("resetDemo");
+      const logElement = document.getElementById("log");
+      const messageElement = document.getElementById("message");
+      
+      // Animation control variables
+      let animationPaused = false;
+      let animationRunning = false;
+      let animationResolve = null;
+      
+      startDemoButton.addEventListener("click", function() {
+        resetDemo();
+        animationPaused = false;
+        animationRunning = true;
+        startDemoButton.disabled = true;
+        pauseDemoButton.disabled = false;
+        continueDemoButton.disabled = true;
+        resetDemoButton.disabled = false;
+        runAgentAnimation();
+      });
+      
+      pauseDemoButton.addEventListener("click", function() {
+        animationPaused = true;
+        pauseDemoButton.disabled = true;
+        continueDemoButton.disabled = false;
+        updateMessage("Animation paused. Click 'Continue' to resume.");
+      });
+      
+      continueDemoButton.addEventListener("click", function() {
+        animationPaused = false;
+        pauseDemoButton.disabled = false;
+        continueDemoButton.disabled = true;
+        updateMessage("Animation resumed...");
+        
+        // Resume the animation by resolving the promise
+        if (animationResolve) {
+          animationResolve();
+          animationResolve = null;
+        }
+      });
+      
+      resetDemoButton.addEventListener("click", function() {
+        resetDemo();
+      });
+      
+      function resetDemo() {
+        // Reset all nodes and links
+        myDiagram.nodes.each(function(node) {
+          const shape = node.findObject("SHAPE");
+          if (shape) {
+            const data = node.data;
+            shape.fill = data.color;
+            shape.stroke = data.borderColor;
+          }
+          
+          const detailsText = node.findObject("DETAILS");
+          if (detailsText) {
+            detailsText.stroke = "#555";
+          }
+          
+          const currentAction = node.findObject("CURRENT_ACTION");
+          if (currentAction) {
+            currentAction.visible = false;
+            currentAction.text = "";
+          }
+        });
+        
+        myDiagram.links.each(function(link) {
+          const shape = link.findObject("SHAPE");
+          if (shape) {
+            shape.strokeWidth = 2;
+          }
+        });
+        
+        // Clear log and message
+        clearLog();
+        messageElement.textContent = "Select \"Start Demo\" to begin.";
+        
+        // Reset animation control
+        animationPaused = false;
+        animationRunning = false;
+        if (animationResolve) {
+          animationResolve();
+          animationResolve = null;
+        }
+        
+        // Reset buttons
+        startDemoButton.disabled = false;
+        pauseDemoButton.disabled = true;
+        continueDemoButton.disabled = true;
+        resetDemoButton.disabled = false;
+      }
+      
+      function clearLog() {
+        logElement.innerHTML = "";
+      }
+      
+      function addLogEntry(type, text) {
+        const logItem = document.createElement("div");
+        logItem.classList.add("log-item");
+        logItem.classList.add("log-" + type);
+        logItem.textContent = text;
+        logElement.appendChild(logItem);
+        logElement.scrollTop = logElement.scrollHeight;
+      }
+      
+      function updateMessage(text) {
+        messageElement.textContent = text;
+      }
+      
+      // Enhanced sleep function that can be paused
+      async function sleep(ms) {
+        // If animation is already paused, create a promise that will be resolved when continued
+        if (animationPaused) {
+          await new Promise(resolve => {
+            animationResolve = resolve;
+          });
+        }
+        
+        // Normal sleep
+        await new Promise(resolve => {
+          setTimeout(() => {
+            // Check if animation is paused after the timeout
+            if (animationPaused) {
+              animationResolve = resolve;
+            } else {
+              resolve();
+            }
+          }, ms);
+        });
+      }
+      
+      function highlightNode(key, duration = 0) {
+        const node = myDiagram.findNodeForKey(key);
+        if (node) {
+          const data = node.data;
+          const shape = node.findObject("SHAPE");
+          if (shape) {
+            shape.fill = data.activeColor;
+            shape.stroke = data.activeBorderColor;
+            
+            if (duration > 0) {
+              setTimeout(() => {
+                if (shape) {
+                  shape.fill = data.color;
+                  shape.stroke = data.borderColor;
+                }
+              }, duration);
+            }
+          }
+        }
+      }
+      
+      function updateCurrentAction(key, action, isActive) {
+        const node = myDiagram.findNodeForKey(key);
+        if (node) {
+          const currentAction = node.findObject("CURRENT_ACTION");
+          if (currentAction) {
+            currentAction.text = action;
+            currentAction.visible = action !== "";
+            
+            if (isActive) {
+              currentAction.stroke = "#e91e63";
+              currentAction.font = "bold 12px sans-serif";
+            } else {
+              currentAction.stroke = "#555";
+              currentAction.font = "12px sans-serif";
+            }
+          }
+        }
+      }
+      
+      function clearAllCurrentActions() {
+        myDiagram.nodes.each(function(node) {
+          const currentAction = node.findObject("CURRENT_ACTION");
+          if (currentAction) {
+            currentAction.visible = false;
+            currentAction.text = "";
+          }
+        });
+      }
+      
+      function highlightLink(fromKey, toKey, text, duration = 1500) {
+        let foundLink = false;
+        myDiagram.links.each(link => {
+          if (link.fromNode && link.toNode && 
+              link.fromNode.key === fromKey && 
+              link.toNode.key === toKey && 
+              link.data.text === text) {
+            
+            const shape = link.findObject("SHAPE");
+            if (shape) {
+              shape.strokeWidth = 3;
+              
+              setTimeout(() => {
+                if (shape) {
+                  shape.strokeWidth = 2;
+                }
+              }, duration);
+              
+              foundLink = true;
+            }
+          }
+        });
+        
+        if (!foundLink && text !== "") {
+          console.warn("Link not found:", fromKey, "->", toKey, text);
+          
+          // If link with text not found, try finding link without text
+          myDiagram.links.each(link => {
+            if (link.fromNode && link.toNode && 
+                link.fromNode.key === fromKey && 
+                link.toNode.key === toKey && 
+                link.data.text === "") {
+              
+              const shape = link.findObject("SHAPE");
+              if (shape) {
+                shape.strokeWidth = 3;
+                
+                setTimeout(() => {
+                  if (shape) {
+                    shape.strokeWidth = 2;
+                  }
+                }, duration);
+                
+                foundLink = true;
+              }
+            }
+          });
+        }
+      }
+      
+      function updateActionPlan(step, isActive) {
+        const node = myDiagram.findNodeForKey("action_plan");
+        if (node) {
+          const detailsText = node.findObject("DETAILS");
+          if (detailsText) {
+            let stepsText = "";
+            
+            // If step is 0, details should be empty
+            if (step === 0 && !isActive) {
+              detailsText.text = "";
+              return;
+            }
+            
+            // Build the steps with different styles
+            for (let i = 1; i <= 4; i++) {
+              let stepPrefix = "";
+              
+              if (i < step) {
+                // Completed step
+                stepPrefix = "✅ ";
+              } else if (i === step && isActive) {
+                // Active step
+                stepPrefix = "🔄 ";
+              } else {
+                // Pending step
+                stepPrefix = "⬜ ";
+              }
+              
+              let stepText = "";
+              switch (i) {
+                case 1:
+                  stepText = "Check Jira tasks today";
+                  break;
+                case 2:
+                  stepText = "View Slack logs";
+                  if (i === step && isActive) {
+                    stepText += " (in progress)";
+                  }
+                  break;
+                case 3:
+                  stepText = "Logwork and update status";
+                  break;
+                case 4:
+                  stepText = "Write daily meeting notes";
+                  break;
+              }
+              
+              stepsText += `${stepPrefix}${i}. ${stepText}\n`;
+            }
+            
+            // Update node details
+            detailsText.text = stepsText.trim();
+            
+            // Highlight the node if step is active
+            if (isActive) {
+              highlightNode("action_plan");
+            }
+          }
+        }
+      }
+      
+      async function runAgentAnimation() {
+        try {
+          // Start animation
+          clearLog();
+          clearAllCurrentActions();
+          updateMessage("Starting workflow...");
+          
+          // Reset all plans to empty at the beginning
+          updateActionPlan(0, false);
+          
+          // User sends message
+          highlightNode("user", 1500);  // Add duration to automatically reset color
+          updateCurrentAction("user", "Send message: 'I've finished my work today'", true);
+          addLogEntry("user", "User: 'I've finished my work today'");
+          await sleep(1500);
+          
+          // Send message to Planning Agent
+          highlightLink("user", "planning", "input");
+          updateCurrentAction("user", "", false);
+          await sleep(1000);
+          
+          // Planning Agent receives message
+          highlightNode("planning");
+          updateCurrentAction("planning", "Receiving message from user...", true);
+          addLogEntry("planning", "Planning Agent: Receiving message from user");
+          updateMessage("Planning Agent is analyzing the message and creating an action plan...");
+          await sleep(1500);
+          
+          // Planning Agent creates action plan
+          updateCurrentAction("planning", "Creating action plan...", true);
+          addLogEntry("planning", "Planning Agent: Creating action plan with 4 steps");
+          updateMessage("Planning Agent has created an action plan based on user's message");
+          
+          // Create and display Action Plan
+          highlightLink("planning", "action_plan", "create");
+          await sleep(1000);
+          highlightNode("action_plan");
+          updateActionPlan(0, true); // Display initial action plan
+          await sleep(1500);
+          
+          // Reset Planning Agent node color before moving to next step
+          const planningNode = myDiagram.findNodeForKey("planning");
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          // Command 1: Planning Agent -> Jira Agent (Step 1 of action plan)
+          updateActionPlan(1, true); // Highlight step 1
+          highlightNode("planning");
+          highlightLink("planning", "jira", "command");
+          updateCurrentAction("planning", "Sending command to Jira Agent...", true);
+          addLogEntry("planning", "Planning Agent → Jira Agent: Get today's tasks for the user");
+          updateMessage("Sending command to Jira Agent: Get today's tasks for the user");
+          await sleep(1500);
+          
+          // Reset Planning Agent node color before highlighting Jira
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          // Jira Agent receives and executes command
+          highlightNode("jira");
+          updateCurrentAction("planning", "", false);
+          updateCurrentAction("jira", "Getting task list...", true);
+          addLogEntry("jira", "Jira Agent: Receiving command to get task list");
+          updateMessage("Jira Agent is executing: getJiraTasks(user, date)");
+          await sleep(2000);
+          
+          // Jira Agent returns result
+          updateCurrentAction("jira", "Found: XDEMO2-6", true);
+          addLogEntry("jira", "Jira Agent: Found task XDEMO2-6 'Update login feature' (In Progress)");
+          updateMessage("Jira Agent returns: Task XDEMO2-6 'Update login feature' (In Progress, Assignee: Hung Nguyen)");
+          await sleep(2000);
+          
+          // Reset Jira Agent node color before moving to next step
+          const jiraNode = myDiagram.findNodeForKey("jira");
+          if (jiraNode) {
+            const jiraShape = jiraNode.findObject("SHAPE");
+            if (jiraShape) {
+              jiraShape.fill = jiraNode.data.color;
+              jiraShape.stroke = jiraNode.data.borderColor;
+            }
+          }
+          
+          // Command 2: Planning Agent -> Slack Agent (Step 2 of action plan)
+          updateActionPlan(2, true); // Highlight step 2
+          highlightNode("planning");
+          highlightLink("planning", "slack", "command");
+          updateCurrentAction("jira", "", false);
+          updateCurrentAction("planning", "Sending command to Slack Agent...", true);
+          addLogEntry("planning", "Planning Agent → Slack Agent: Find messages related to task XDEMO2-6");
+          updateMessage("Sending command to Slack Agent: Find messages related to task XDEMO2-6");
+          await sleep(1500);
+          
+          // Reset Planning Agent node color before highlighting Slack
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          // Slack Agent receives and executes command
+          highlightNode("slack");
+          updateCurrentAction("planning", "", false);
+          updateCurrentAction("slack", "Searching messages...", true);
+          addLogEntry("slack", "Slack Agent: Receiving command to search messages");
+          updateMessage("Slack Agent is executing: searchSlackMessages('XDEMO2-6')");
+          await sleep(2000);
+          
+          // Slack Agent returns result
+          updateCurrentAction("slack", "Found: 3 messages", true);
+          addLogEntry("slack", "Slack Agent: Found 3 messages related to task XDEMO2-6");
+          updateMessage("Slack Agent returns: 3 messages related to task XDEMO2-6 in #project-channel");
+          await sleep(2000);
+          
+          // Reset Slack Agent node color before moving to next step
+          const slackNode = myDiagram.findNodeForKey("slack");
+          if (slackNode) {
+            const slackShape = slackNode.findObject("SHAPE");
+            if (slackShape) {
+              slackShape.fill = slackNode.data.color;
+              slackShape.stroke = slackNode.data.borderColor;
+            }
+          }
+          
+          // Command 3: Planning Agent -> Jira Agent (Step 3 of action plan)
+          updateActionPlan(3, true); // Highlight step 3
+          highlightNode("planning");
+          highlightLink("planning", "jira", "command");
+          updateCurrentAction("slack", "", false);
+          updateCurrentAction("planning", "Sending command to Jira Agent...", true);
+          addLogEntry("planning", "Planning Agent → Jira Agent: Log 8h work for task XDEMO2-6 and change status to Done");
+          updateMessage("Sending command to Jira Agent: Log 8h work for task XDEMO2-6 and change status to Done");
+          await sleep(1500);
+          
+          // Reset Planning Agent node color before highlighting Jira
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          // Jira Agent receives and executes command 2
+          highlightNode("jira");
+          updateCurrentAction("planning", "", false);
+          updateCurrentAction("jira", "Updating task...", true);
+          addLogEntry("jira", "Jira Agent: Receiving command to update task");
+          updateMessage("Jira Agent is executing: updateJiraTask(XDEMO2-6, {status: 'Done', logwork: '8h'})");
+          await sleep(2000);
+          
+          // Jira Agent returns update result
+          updateCurrentAction("jira", "Updated: XDEMO2-6 → Done", true);
+          addLogEntry("jira", "Jira Agent: Successfully updated task XDEMO2-6 (status: Done, logwork: 8h)");
+          updateMessage("Jira Agent returns: Task XDEMO2-6 has been successfully updated (Now: Done)");
+          await sleep(2000);
+          
+          // Reset Jira Agent node color before moving to next step
+          if (jiraNode) {
+            const jiraShape = jiraNode.findObject("SHAPE");
+            if (jiraShape) {
+              jiraShape.fill = jiraNode.data.color;
+              jiraShape.stroke = jiraNode.data.borderColor;
+            }
+          }
+          
+          // Command 4: Planning Agent -> Confluence Agent (Step 4 of action plan)
+          updateActionPlan(4, true); // Highlight step 4
+          highlightNode("planning");
+          highlightLink("planning", "confluence", "command");
+          updateCurrentAction("jira", "", false);
+          updateCurrentAction("planning", "Sending command to Confluence Agent...", true);
+          addLogEntry("planning", "Planning Agent → Confluence Agent: Create daily meeting note with task completion content");
+          updateMessage("Sending command to Confluence Agent: Create daily meeting note with task completion content");
+          await sleep(1500);
+          
+          // Reset Planning Agent node color before highlighting Confluence
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          // Confluence Agent receives and executes command
+          highlightNode("confluence");
+          updateCurrentAction("planning", "", false);
+          updateCurrentAction("confluence", "Creating meeting note...", true);
+          addLogEntry("confluence", "Confluence Agent: Receiving command to create meeting note");
+          updateMessage("Confluence Agent is executing: createConfluencePage('Daily Meeting Note', content)");
+          await sleep(2000);
+          
+          // Confluence Agent returns result
+          updateCurrentAction("confluence", "Created: Daily Meeting Note", true);
+          addLogEntry("confluence", "Confluence Agent: Successfully created 'Daily Meeting Note' page");
+          updateMessage("Confluence Agent returns: 'Daily Meeting Note' page has been successfully created with the URL: https://workspace.atlassian.net/wiki/spaces/~123456/pages/123456789");
+          await sleep(2000);
+          
+          // Reset Confluence Agent node color before moving to next step
+          const confluenceNode = myDiagram.findNodeForKey("confluence");
+          if (confluenceNode) {
+            const confluenceShape = confluenceNode.findObject("SHAPE");
+            if (confluenceShape) {
+              confluenceShape.fill = confluenceNode.data.color;
+              confluenceShape.stroke = confluenceNode.data.borderColor;
+            }
+          }
+          
+          // Complete all steps and finish
+          updateActionPlan(5, false); // All steps completed
+          updateCurrentAction("confluence", "", false);
+          highlightNode("planning");
+          updateCurrentAction("planning", "All tasks completed ✅", true);
+          addLogEntry("planning", "Planning Agent: All requested tasks have been completed successfully");
+          updateMessage("Planning Agent: I've successfully completed all your requested tasks. Daily meeting note has been created with your task updates.");
+          
+          // Final user feedback
+          await sleep(2000);
+          // Reset Planning Agent node color before highlighting User
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          highlightNode("user");
+          updateCurrentAction("planning", "", false);
+          updateCurrentAction("user", "Thanks!", true);
+          addLogEntry("user", "User: Thanks!");
+          await sleep(1000);
+          
+          // Reset User node color at the end
+          const userNode = myDiagram.findNodeForKey("user");
+          if (userNode) {
+            const userShape = userNode.findObject("SHAPE");
+            if (userShape) {
+              userShape.fill = userNode.data.color;
+              userShape.stroke = userNode.data.borderColor;
+            }
+          }
+        } finally {
+          // Clean up when animation finishes or is interrupted
+          animationRunning = false;
+          startDemoButton.disabled = false;
+          pauseDemoButton.disabled = true;
+          continueDemoButton.disabled = true;
+        }
+      }
+      
+      // Make functions available globally
+      window.runAgentAnimation = runAgentAnimation;
+      window.resetDemo = resetDemo;
+    });
+  </script>
+</body>
+</html> 

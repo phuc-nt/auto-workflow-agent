@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Workflow Explain</title>
+  <script src="./assets/js/go.js"></script>
+  <link rel="stylesheet" href="./assets/css/font-awesome.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .content-wrapper {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+    }
+    .diagram-panel {
+      flex: 1;
+      min-width: 0;
+    }
+    .info-panel {
+      flex: 0 0 400px;
+      height: 700px;
+      display: flex;
+      flex-direction: column;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      padding: 15px;
+      overflow: hidden;
+    }
+    #myDiagramDiv {
+      width: 100%;
+      height: 700px;
+      border: 1px solid #d3d3d3;
+      background-color: #fff;
+    }
+    .buttons {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .control-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      margin: 0 10px;
+      font-size: 20px;
+      cursor: pointer;
+      color: white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .control-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+    .control-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .btn-start {
+      background-color: #52c41a;
+    }
+    .btn-pause {
+      background-color: #faad14;
+    }
+    .btn-continue {
+      background-color: #1890ff;
+    }
+    .btn-reset {
+      background-color: #ff4d4f;
+    }
+    .btn-start:hover {
+      background-color: #389e0d;
+    }
+    .btn-pause:hover {
+      background-color: #d48806;
+    }
+    .btn-continue:hover {
+      background-color: #096dd9;
+    }
+    .btn-reset:hover {
+      background-color: #cf1322;
+    }
+    .control-btn:disabled {
+      background-color: #d9d9d9;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .details-section {
+      margin-bottom: 20px;
+    }
+    #message {
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+      font-family: monospace;
+      min-height: 60px;
+      margin-top: 10px;
+    }
+    .log-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .log {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+    .log-item {
+      margin-bottom: 5px;
+      padding: 5px;
+      border-radius: 3px;
+    }
+    .log-user {
+      background-color: #e6f7ff;
+      border-left: 3px solid #1890ff;
+    }
+    .log-planning {
+      background-color: #f6ffed;
+      border-left: 3px solid #52c41a;
+    }
+    .log-jira {
+      background-color: #fff1f0;
+      border-left: 3px solid #ff4d4f;
+    }
+    .log-slack {
+      background-color: #fffbe6;
+      border-left: 3px solid #faad14;
+    }
+    .log-confluence {
+      background-color: #f9f0ff;
+      border-left: 3px solid #722ed1;
+    }
+    .node-details {
+      max-width: 200px;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .node-active {
+      font-weight: bold;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Agent Workflow Explain</h1>
+    
+    <div class="buttons">
+      <button id="startDemo" class="control-btn btn-start" title="Bắt đầu Demo">
+        <i class="fas fa-play"></i>
+      </button>
+      <button id="pauseDemo" class="control-btn btn-pause" disabled title="Tạm dừng">
+        <i class="fas fa-pause"></i>
+      </button>
+      <button id="continueDemo" class="control-btn btn-continue" disabled title="Tiếp tục">
+        <i class="fas fa-forward"></i>
+      </button>
+      <button id="resetDemo" class="control-btn btn-reset" title="Làm lại">
+        <i class="fas fa-redo"></i>
+      </button>
+    </div>
+    
+    <div class="content-wrapper">
+      <div class="diagram-panel">
+        <div id="myDiagramDiv"></div>
+      </div>
+      
+      <div class="info-panel">
+        <div class="details-section">
+          <h3>Chi tiết hành động:</h3>
+          <div id="message">Chọn "Bắt đầu Demo" để bắt đầu.</div>
+        </div>
+        
+        <div class="log-section">
+          <h3>Nhật ký thực thi:</h3>
+          <div id="log" class="log"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Khởi tạo diagram
+    const $ = go.GraphObject.make;
+    
+    const myDiagram = new go.Diagram("myDiagramDiv", {
+      "undoManager.isEnabled": true,
+      "initialAutoScale": go.Diagram.Uniform,
+      "initialContentAlignment": go.Spot.Center,
+      // Vô hiệu hóa layout tự động và thêm fixedBounds
+      layout: $(go.LayeredDigraphLayout, { 
+        isInitial: false,  // Không dùng layout khi khởi tạo
+        isOngoing: false,  // Không tự động áp dụng layout
+        direction: 90,
+        layerSpacing: 50,
+        columnSpacing: 30,
+        setsPortSpots: false
+      })
+    });
+    
+    // Định nghĩa template cho các node
+    myDiagram.nodeTemplate =
+      $(go.Node, "Auto",
+        { 
+          selectionAdorned: false, 
+          resizable: false,
+          locationSpot: go.Spot.Center, // Thêm locationSpot
+          movable: false  // Không cho phép di chuyển node
+        },
+        $(go.Shape, "RoundedRectangle", {
+          fill: "white", strokeWidth: 2,
+          portId: "", fromLinkable: true, toLinkable: true, cursor: "pointer",
+          stroke: "gray",
+          name: "SHAPE"  // Thêm name để dễ dàng truy cập đối tượng hình dạng
+        },
+        new go.Binding("fill", "color"),
+        new go.Binding("stroke", "borderColor")),
+        $(go.Panel, "Vertical",
+          { margin: 8 },
+          $(go.TextBlock, 
+            { 
+              margin: new go.Margin(0, 0, 5, 0),
+              font: "bold 14px sans-serif", 
+              stroke: "#333",
+              alignment: go.Spot.Center
+            },
+            new go.Binding("text", "name")),
+          $(go.Panel, "Vertical",
+            { 
+              background: "white", 
+              margin: new go.Margin(5, 0, 0, 0),
+              maxSize: new go.Size(200, NaN)
+            },
+            new go.Binding("visible", "showDetails"),
+            $(go.TextBlock, 
+              { 
+                margin: 5,
+                font: "12px sans-serif",
+                stroke: "#555",
+                wrap: go.TextBlock.WrapFit,
+                alignment: go.Spot.Left,
+                name: "DETAILS"  // Thêm name để cập nhật realtime
+              },
+              new go.Binding("text", "details")),
+            $(go.TextBlock, 
+              { 
+                margin: 5,
+                font: "12px sans-serif",
+                stroke: "#e91e63",
+                wrap: go.TextBlock.WrapFit,
+                alignment: go.Spot.Left,
+                name: "CURRENT_ACTION",
+                visible: false  // Ẩn ban đầu
+              })
+          )
+        )
+      );
+    
+    // Định nghĩa template cho các link
+    myDiagram.linkTemplate =
+      $(go.Link,
+        { 
+          routing: go.Link.AvoidsNodes,
+          curve: go.Link.JumpOver,
+          corner: 10,
+          toShortLength: 4
+        },
+        $(go.Shape, { 
+          strokeWidth: 2,
+          name: "SHAPE"  // Thêm name để dễ dàng truy cập đối tượng hình dạng
+        },
+          new go.Binding("stroke", "color")),
+        $(go.Shape, { toArrow: "Standard", stroke: null, scale: 1.5 },
+          new go.Binding("fill", "color")),
+        $(go.Panel, "Auto",
+          $(go.Shape, "RoundedRectangle", {
+            fill: "white", stroke: "gray",
+            minSize: new go.Size(50, 20)
+          }),
+          $(go.TextBlock, {
+            margin: 5,
+            font: "11px sans-serif",
+            stroke: "#333",
+            name: "LINK_TEXT"  // Thêm name để cập nhật realtime
+          },
+          new go.Binding("text", "text"))
+        )
+      );
+    
+    // Tạo dữ liệu cho các node với vị trí cố định
+    const nodeDataArray = [
+      { 
+        key: "user", 
+        name: "User", 
+        details: "Đầu vào",
+        color: "#f5f5f5", 
+        activeColor: "#e6f7ff",
+        borderColor: "#d9d9d9",
+        activeBorderColor: "#1890ff",
+        showDetails: true,
+        // Vị trí node từ hình ảnh
+        loc: "370 85"
+      },
+      { 
+        key: "planning", 
+        name: "Planning Agent", 
+        details: "Phân tích tin nhắn và lên kế hoạch",
+        color: "#f5f5f5", 
+        activeColor: "#f6ffed",
+        borderColor: "#d9d9d9",
+        activeBorderColor: "#52c41a",
+        showDetails: true,
+        // Vị trí node từ hình ảnh
+        loc: "370 255"
+      },
+      { 
+        key: "action_plan", 
+        name: "Action Plan", 
+        details: "",  // Bắt đầu với chi tiết trống
+        color: "#f0f7ff", 
+        activeColor: "#f0f7ff",
+        borderColor: "#91caff",
+        activeBorderColor: "#1677ff",
+        showDetails: true,
+        // Vị trí node từ hình ảnh
+        loc: "617 128"
+      },
+      { 
+        key: "jira", 
+        name: "Jira Agent", 
+        details: "Tương tác với Jira API",
+        color: "#f5f5f5", 
+        activeColor: "#fff1f0",
+        borderColor: "#d9d9d9",
+        activeBorderColor: "#ff4d4f",
+        showDetails: true,
+        // Vị trí node từ hình ảnh
+        loc: "106 394"
+      },
+      { 
+        key: "slack", 
+        name: "Slack Agent", 
+        details: "Tương tác với Slack API",
+        color: "#f5f5f5", 
+        activeColor: "#fffbe6",
+        borderColor: "#d9d9d9",
+        activeBorderColor: "#faad14",
+        showDetails: true,
+        // Vị trí node từ hình ảnh
+        loc: "370 514"
+      },
+      { 
+        key: "confluence", 
+        name: "Confluence Agent", 
+        details: "Tương tác với Confluence API",
+        color: "#f5f5f5", 
+        activeColor: "#f9f0ff",
+        borderColor: "#d9d9d9",
+        activeBorderColor: "#722ed1",
+        showDetails: true,
+        // Vị trí node từ hình ảnh
+        loc: "634 391"
+      }
+    ];
+    
+    // Tạo dữ liệu cho các link
+    const linkDataArray = [
+      { from: "user", to: "planning", color: "#1890ff", text: "input" },
+      { from: "planning", to: "action_plan", color: "#52c41a", text: "tạo" },
+      { from: "planning", to: "jira", color: "#52c41a", text: "ra lệnh" },
+      { from: "planning", to: "slack", color: "#52c41a", text: "ra lệnh" },
+      { from: "planning", to: "confluence", color: "#52c41a", text: "ra lệnh" }
+    ];
+    
+    // Xử lý ẩn hiện các link trùng nhau
+    function avoidDuplicateLinks(model) {
+      const linkKeys = {};
+      model.linkDataArray.forEach((linkData, i) => {
+        const key = linkData.from + "," + linkData.to;
+        if (key in linkKeys) {
+          const firstIdx = linkKeys[key];
+          const firstLink = model.linkDataArray[firstIdx];
+          
+          // Điều chỉnh cong cho cả hai links
+          if (!firstLink.curviness) firstLink.curviness = 20;
+          if (!linkData.curviness) linkData.curviness = -20;
+        } else {
+          linkKeys[key] = i;
+        }
+      });
+    }
+    
+    // Khởi tạo mô hình với dữ liệu
+    myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
+    avoidDuplicateLinks(myDiagram.model);
+
+    // Đặt vị trí cho mỗi node
+    myDiagram.nodes.each(node => {
+      const data = node.data;
+      if (data.loc) {
+        const pos = go.Point.parse(data.loc);
+        node.location = pos;
+      }
+    });
+
+    // Đảm bảo DOM đã tải xong
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("DOM fully loaded");
+      
+      // Xử lý animation
+      const messageBox = document.getElementById("message");
+      const logBox = document.getElementById("log");
+      const startButton = document.getElementById("startDemo");
+      const pauseButton = document.getElementById("pauseDemo");
+      const continueButton = document.getElementById("continueDemo");
+      const resetButton = document.getElementById("resetDemo");
+      
+      console.log("Elements found:", {
+        messageBox: messageBox !== null,
+        logBox: logBox !== null,
+        startButton: startButton !== null,
+        pauseButton: pauseButton !== null,
+        continueButton: continueButton !== null,
+        resetButton: resetButton !== null
+      });
+      
+      // Biến kiểm soát animation
+      let animationPaused = false;
+      let animationRunning = false;
+      let animationResolve = null;
+      
+      // Các hàm tiện ích
+      async function sleep(ms) {
+        // Nếu animation đang bị tạm dừng, tạo một promise sẽ được giải quyết khi tiếp tục
+        if (animationPaused) {
+          await new Promise(resolve => {
+            animationResolve = resolve;
+          });
+        }
+        
+        // Sleep bình thường
+        await new Promise(resolve => {
+          setTimeout(() => {
+            // Kiểm tra nếu animation bị tạm dừng sau timeout
+            if (animationPaused) {
+              animationResolve = resolve;
+            } else {
+              resolve();
+            }
+          }, ms);
+        });
+      }
+      
+      function updateNodeDetails(nodeKey, newDetails) {
+        const node = myDiagram.findNodeForKey(nodeKey);
+        if (node) {
+          // Cập nhật dữ liệu model
+          myDiagram.model.commit(m => {
+            m.set(node.data, "details", newDetails);
+          });
+        }
+      }
+      
+      function updateCurrentAction(nodeKey, action, isActive = true) {
+        const node = myDiagram.findNodeForKey(nodeKey);
+        if (node) {
+          // Tìm textblock cho current action
+          const textBlock = node.findObject("CURRENT_ACTION");
+          if (textBlock) {
+            textBlock.text = action;
+            textBlock.visible = action !== "";
+            
+            // Thêm/xóa class node-active
+            if (isActive) {
+              textBlock.className = "node-active";
+              
+              // Thay đổi màu node khi active
+              const nodeData = myDiagram.model.nodeDataArray.find(n => n.key === nodeKey);
+              if (nodeData) {
+                myDiagram.model.commit(m => {
+                  m.set(nodeData, "color", nodeData.activeColor);
+                  m.set(nodeData, "borderColor", nodeData.activeBorderColor);
+                });
+                
+                const shape = node.findObject("SHAPE");
+                if (shape) {
+                  shape.stroke = nodeData.activeBorderColor;
+                }
+              }
+            } else {
+              textBlock.className = "";
+              
+              // Đặt lại màu node khi không active
+              const nodeData = myDiagram.model.nodeDataArray.find(n => n.key === nodeKey);
+              if (nodeData) {
+                myDiagram.model.commit(m => {
+                  m.set(nodeData, "color", "#f5f5f5");
+                  m.set(nodeData, "borderColor", "#d9d9d9");
+                });
+                
+                const shape = node.findObject("SHAPE");
+                if (shape) {
+                  shape.stroke = "#d9d9d9";
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      function clearAllCurrentActions() {
+        nodeDataArray.forEach(nodeData => {
+          updateCurrentAction(nodeData.key, "", false);
+        });
+      }
+      
+      function highlightNode(nodeKey, duration = 2000) {
+        console.log("Highlighting node:", nodeKey);
+        const node = myDiagram.findNodeForKey(nodeKey);
+        if (node) {
+          const shape = node.findObject("SHAPE");
+          if (shape) {
+            // Thay đổi màu nền và viền khi active
+            const nodeData = myDiagram.model.nodeDataArray.find(n => n.key === nodeKey);
+            if (nodeData) {
+              myDiagram.model.commit(m => {
+                m.set(nodeData, "color", nodeData.activeColor);
+                m.set(nodeData, "borderColor", nodeData.activeBorderColor);
+              });
+              shape.stroke = nodeData.activeBorderColor;
+              shape.strokeWidth = 3;
+            }
+            
+            setTimeout(() => {
+              // Đặt lại màu gốc sau khi hết thời gian highlight
+              if (nodeData) {
+                const currentAction = node.findObject("CURRENT_ACTION");
+                // Chỉ đặt lại màu nếu node không còn active (không có current action)
+                if (!currentAction || !currentAction.visible) {
+                  myDiagram.model.commit(m => {
+                    m.set(nodeData, "color", "#f5f5f5");
+                    m.set(nodeData, "borderColor", "#d9d9d9");
+                  });
+                  shape.stroke = "#d9d9d9";
+                }
+                shape.strokeWidth = 2;
+              }
+            }, duration);
+          } else {
+            console.error("Shape not found in node:", nodeKey);
+          }
+        } else {
+          console.error("Node not found:", nodeKey);
+        }
+      }
+      
+      function highlightLink(fromKey, toKey, text, duration = 1500) {
+        let foundLink = false;
+        myDiagram.links.each(link => {
+          if (link.fromNode && link.toNode && 
+              link.fromNode.key === fromKey && 
+              link.toNode.key === toKey && 
+              link.data.text === text) {
+            
+            const shape = link.findObject("SHAPE");
+            if (shape) {
+              shape.strokeWidth = 3;
+              
+              setTimeout(() => {
+                if (shape) {
+                  shape.strokeWidth = 2;
+                }
+              }, duration);
+              
+              foundLink = true;
+            }
+          }
+        });
+        
+        if (!foundLink && text !== "") {
+          console.warn("Link not found:", fromKey, "->", toKey, text);
+          
+          // Nếu không tìm thấy link với text, thử tìm link không có text
+          myDiagram.links.each(link => {
+            if (link.fromNode && link.toNode && 
+                link.fromNode.key === fromKey && 
+                link.toNode.key === toKey && 
+                link.data.text === "") {
+              
+              const shape = link.findObject("SHAPE");
+              if (shape) {
+                shape.strokeWidth = 3;
+                
+                setTimeout(() => {
+                  if (shape) {
+                    shape.strokeWidth = 2;
+                  }
+                }, duration);
+                
+                foundLink = true;
+              }
+            }
+          });
+        }
+      }
+      
+      function updateMessage(text) {
+        console.log("Updating message:", text);
+        messageBox.innerText = text;
+      }
+      
+      function addLogEntry(agentType, message) {
+        // Kiểm tra xem tin nhắn đã tồn tại chưa
+        const existingItems = logBox.querySelectorAll('.log-item');
+        for (let i = 0; i < existingItems.length; i++) {
+          if (existingItems[i].innerText === message) {
+            console.log("Duplicate message, skipping:", message);
+            return; // Không thêm tin nhắn trùng lặp
+          }
+        }
+        
+        const logItem = document.createElement("div");
+        logItem.className = "log-item log-" + agentType;
+        logItem.innerText = message;
+        logBox.appendChild(logItem);
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+      
+      function clearLog() {
+        console.log("Clearing log");
+        logBox.innerHTML = "";
+      }
+      
+      function updateActionPlan(step, isActive = true) {
+        const node = myDiagram.findNodeForKey("action_plan");
+        if (node) {
+          // Tìm kiếm tất cả các bước trong action plan
+          const details = node.findObject("DETAILS");
+          if (details) {
+            let stepsText = "";
+            
+            // Nếu step là 0 và không active, để trống
+            if (step === 0 && !isActive) {
+              details.text = "";
+              return;
+            }
+            
+            const allSteps = [
+              "Kiểm tra Jira tasks hôm nay",
+              "Xem logs Slack", 
+              "Logwork và cập nhật status",
+              "Viết daily meeting notes"
+            ];
+            
+            for (let i = 0; i < allSteps.length; i++) {
+              let stepPrefix = "";
+              
+              if (i+1 < step) {
+                // Bước đã hoàn thành
+                stepPrefix = "✅ ";
+              } else if (i+1 === step && isActive) {
+                // Bước hiện tại
+                stepPrefix = "🔄 ";
+                if (i === 1) { // Bước 2 - xem logs Slack
+                  allSteps[i] += " (đang thực hiện)";
+                }
+              } else {
+                // Các bước chưa thực hiện
+                stepPrefix = "⬜ ";
+              }
+              
+              stepsText += `${stepPrefix}${i+1}. ${allSteps[i]}\n`;
+            }
+            
+            // Cập nhật nội dung
+            details.text = stepsText.trim();
+            
+            // Highlight node nếu đang active
+            if (isActive) {
+              highlightNode("action_plan");
+            }
+          }
+        }
+      }
+      
+      // Xử lý sự kiện nút
+      startButton.addEventListener("click", function() {
+        resetDemo();
+        animationPaused = false;
+        animationRunning = true;
+        startButton.disabled = true;
+        pauseButton.disabled = false;
+        continueButton.disabled = true;
+        resetButton.disabled = false;
+        startAnimation();
+      });
+      
+      pauseButton.addEventListener("click", function() {
+        animationPaused = true;
+        pauseButton.disabled = true;
+        continueButton.disabled = false;
+        updateMessage("Đã tạm dừng. Nhấn 'Tiếp tục' để tiếp tục.");
+      });
+      
+      continueButton.addEventListener("click", function() {
+        animationPaused = false;
+        pauseButton.disabled = false;
+        continueButton.disabled = true;
+        updateMessage("Đang tiếp tục...");
+        
+        // Tiếp tục animation bằng cách giải quyết promise
+        if (animationResolve) {
+          animationResolve();
+          animationResolve = null;
+        }
+      });
+      
+      resetButton.addEventListener("click", function() {
+        resetDemo();
+      });
+      
+      function resetDemo() {
+        // Reset tất cả các node và link
+        myDiagram.nodes.each(function(node) {
+          const shape = node.findObject("SHAPE");
+          if (shape) {
+            const data = node.data;
+            shape.fill = data.color;
+            shape.stroke = data.borderColor;
+          }
+          
+          const detailsText = node.findObject("DETAILS");
+          if (detailsText) {
+            detailsText.stroke = "#555";
+          }
+          
+          const currentAction = node.findObject("CURRENT_ACTION");
+          if (currentAction) {
+            currentAction.visible = false;
+            currentAction.text = "";
+          }
+        });
+        
+        myDiagram.links.each(function(link) {
+          const shape = link.findObject("SHAPE");
+          if (shape) {
+            shape.strokeWidth = 2;
+          }
+        });
+        
+        // Xóa log và message
+        clearLog();
+        messageBox.innerText = "Chọn 'Bắt đầu Demo' để bắt đầu.";
+        
+        // Reset các biến kiểm soát animation
+        animationPaused = false;
+        animationRunning = false;
+        if (animationResolve) {
+          animationResolve();
+          animationResolve = null;
+        }
+        
+        // Reset các nút
+        startButton.disabled = false;
+        pauseButton.disabled = true;
+        continueButton.disabled = true;
+        resetButton.disabled = false;
+      }
+      
+      // Trình tự animation
+      async function startAnimation() {
+        try {
+          // Reset
+          clearLog();
+          clearAllCurrentActions();
+          updateMessage("Bắt đầu workflow...");
+          
+          // Reset ActionPlan về trống lúc ban đầu
+          updateActionPlan(0, false);
+          
+          // User gửi tin nhắn
+          highlightNode("user", 1500);
+          updateCurrentAction("user", "Gửi tin nhắn: 'Tôi đã xong việc hôm nay'", true);
+          addLogEntry("user", "User: 'Tôi đã xong việc hôm nay'");
+          await sleep(1500);
+          
+          // Gửi tin nhắn đến Planning Agent
+          highlightLink("user", "planning", "input");
+          updateCurrentAction("user", "", false);
+          await sleep(1000);
+          
+          // Planning Agent nhận tin nhắn
+          highlightNode("planning");
+          updateCurrentAction("planning", "Nhận tin nhắn từ user...", true);
+          addLogEntry("planning", "Planning Agent: Nhận tin nhắn từ user");
+          updateMessage("Planning Agent đang phân tích tin nhắn và tạo action plan...");
+          await sleep(1500);
+          
+          // Planning Agent tạo action plan
+          updateCurrentAction("planning", "Tạo action plan...", true);
+          addLogEntry("planning", "Planning Agent: Tạo action plan với 4 bước");
+          updateMessage("Planning Agent đã tạo action plan dựa trên tin nhắn của user");
+          
+          // Tạo và hiển thị Action Plan
+          highlightLink("planning", "action_plan", "tạo");
+          await sleep(1000);
+          highlightNode("action_plan");
+          updateActionPlan(0, true); // Hiển thị action plan ban đầu
+          await sleep(1500);
+          
+          // Reset màu Planning Agent trước khi chuyển sang bước tiếp theo
+          const planningNode = myDiagram.findNodeForKey("planning");
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          // Command 1: Planning Agent -> Jira Agent (Bước 1 của action plan)
+          updateActionPlan(1, true); // Highlight bước 1
+          highlightNode("planning");
+          highlightLink("planning", "jira", "ra lệnh");
+          updateCurrentAction("planning", "Gửi lệnh cho Jira Agent...", true);
+          addLogEntry("planning", "Planning Agent → Jira Agent: Lấy danh sách task của user hôm nay");
+          updateMessage("Gửi lệnh đến Jira Agent: Lấy danh sách task của user hôm nay");
+          await sleep(1500);
+          
+          // Reset màu Planning Agent trước khi highlight Jira
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          // Jira Agent nhận và thực thi lệnh
+          highlightNode("jira");
+          updateCurrentAction("planning", "", false);
+          updateCurrentAction("jira", "Đang lấy danh sách task...", true);
+          addLogEntry("jira", "Jira Agent: Nhận lệnh lấy danh sách task");
+          updateMessage("Jira Agent đang thực thi: getJiraTasks(user, date)");
+          await sleep(2000);
+          
+          // Jira Agent trả kết quả
+          updateCurrentAction("jira", "Đã tìm thấy: XDEMO2-6", true);
+          addLogEntry("jira", "Jira Agent: Tìm thấy task XDEMO2-6 'Cập nhật tính năng đăng nhập' (In Progress)");
+          updateMessage("Jira Agent trả về: Task XDEMO2-6 'Cập nhật tính năng đăng nhập' (In Progress, Assignee: Hung Nguyen)");
+          await sleep(2000);
+          
+          // Reset màu Jira Agent trước khi chuyển sang bước tiếp theo
+          const jiraNode = myDiagram.findNodeForKey("jira");
+          if (jiraNode) {
+            const jiraShape = jiraNode.findObject("SHAPE");
+            if (jiraShape) {
+              jiraShape.fill = jiraNode.data.color;
+              jiraShape.stroke = jiraNode.data.borderColor;
+            }
+          }
+          
+          // Command 2: Planning Agent -> Slack Agent (Bước 2 của action plan)
+          updateActionPlan(2, true); // Highlight bước 2
+          highlightNode("planning");
+          highlightLink("planning", "slack", "ra lệnh");
+          updateCurrentAction("jira", "", false);
+          updateCurrentAction("planning", "Gửi lệnh cho Slack Agent...", true);
+          addLogEntry("planning", "Planning Agent → Slack Agent: Tìm tin nhắn liên quan đến task XDEMO2-6");
+          updateMessage("Gửi lệnh đến Slack Agent: Tìm tin nhắn liên quan đến task XDEMO2-6");
+          await sleep(1500);
+          
+          // Reset màu Planning Agent trước khi highlight Slack
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          // Slack Agent nhận và thực thi lệnh
+          highlightNode("slack");
+          updateCurrentAction("planning", "", false);
+          updateCurrentAction("slack", "Đang tìm tin nhắn...", true);
+          addLogEntry("slack", "Slack Agent: Nhận lệnh tìm tin nhắn");
+          updateMessage("Slack Agent đang thực thi: searchSlackMessages('XDEMO2-6')");
+          await sleep(2000);
+          
+          // Slack Agent trả kết quả
+          updateCurrentAction("slack", "Đã tìm thấy: 3 tin nhắn", true);
+          addLogEntry("slack", "Slack Agent: Tìm thấy 3 tin nhắn liên quan đến task XDEMO2-6");
+          updateMessage("Slack Agent trả về: 3 tin nhắn liên quan đến task XDEMO2-6 trong kênh #project-channel");
+          await sleep(2000);
+          
+          // Reset màu Slack Agent trước khi chuyển sang bước tiếp theo
+          const slackNode = myDiagram.findNodeForKey("slack");
+          if (slackNode) {
+            const slackShape = slackNode.findObject("SHAPE");
+            if (slackShape) {
+              slackShape.fill = slackNode.data.color;
+              slackShape.stroke = slackNode.data.borderColor;
+            }
+          }
+          
+          // Command 3: Planning Agent -> Jira Agent (Bước 3 của action plan)
+          updateActionPlan(3, true); // Highlight bước 3
+          highlightNode("planning");
+          highlightLink("planning", "jira", "ra lệnh");
+          updateCurrentAction("slack", "", false);
+          updateCurrentAction("planning", "Gửi lệnh cho Jira Agent...", true);
+          addLogEntry("planning", "Planning Agent → Jira Agent: Log work 8h cho task XDEMO2-6 và chuyển status thành Done");
+          updateMessage("Gửi lệnh đến Jira Agent: Log work 8h cho task XDEMO2-6 và chuyển status thành Done");
+          await sleep(1500);
+          
+          // Reset màu Planning Agent trước khi highlight Jira
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          // Jira Agent nhận và thực thi lệnh lần 2
+          highlightNode("jira");
+          updateCurrentAction("planning", "", false);
+          updateCurrentAction("jira", "Đang cập nhật task...", true);
+          addLogEntry("jira", "Jira Agent: Nhận lệnh cập nhật task");
+          updateMessage("Jira Agent đang thực thi: updateJiraTask(XDEMO2-6, {status: 'Done', logwork: '8h'})");
+          await sleep(2000);
+          
+          // Jira Agent trả kết quả cập nhật
+          updateCurrentAction("jira", "Đã cập nhật: XDEMO2-6 → Done", true);
+          addLogEntry("jira", "Jira Agent: Đã cập nhật task XDEMO2-6 thành công (status: Done, logwork: 8h)");
+          updateMessage("Jira Agent trả về: Task XDEMO2-6 đã được cập nhật thành công (Now: Done)");
+          await sleep(2000);
+          
+          // Reset màu Jira Agent trước khi chuyển sang bước tiếp theo
+          if (jiraNode) {
+            const jiraShape = jiraNode.findObject("SHAPE");
+            if (jiraShape) {
+              jiraShape.fill = jiraNode.data.color;
+              jiraShape.stroke = jiraNode.data.borderColor;
+            }
+          }
+          
+          // Command 4: Planning Agent -> Confluence Agent (Bước 4 của action plan)
+          updateActionPlan(4, true); // Highlight bước 4
+          highlightNode("planning");
+          highlightLink("planning", "confluence", "ra lệnh");
+          updateCurrentAction("jira", "", false);
+          updateCurrentAction("planning", "Gửi lệnh cho Confluence Agent...", true);
+          addLogEntry("planning", "Planning Agent → Confluence Agent: Tạo daily meeting note với nội dung hoàn thành task");
+          updateMessage("Gửi lệnh đến Confluence Agent: Tạo daily meeting note với nội dung hoàn thành task");
+          await sleep(1500);
+          
+          // Reset màu Planning Agent trước khi highlight Confluence
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          // Confluence Agent nhận và thực thi lệnh
+          highlightNode("confluence");
+          updateCurrentAction("planning", "", false);
+          updateCurrentAction("confluence", "Đang tạo daily meeting note...", true);
+          addLogEntry("confluence", "Confluence Agent: Nhận lệnh tạo daily meeting note");
+          updateMessage("Confluence Agent đang thực thi: createConfluencePage('Daily Meeting', content)");
+          await sleep(2000);
+          
+          // Confluence Agent trả kết quả
+          updateCurrentAction("confluence", "Đã tạo: Daily Meeting Note", true);
+          addLogEntry("confluence", "Confluence Agent: Đã tạo trang Daily Meeting Note thành công");
+          updateMessage("Confluence Agent trả về: Đã tạo trang Daily Meeting Note với thông tin task đã hoàn thành");
+          await sleep(2000);
+          
+          // Reset màu Confluence Agent trước khi chuyển sang bước tiếp theo
+          const confluenceNode = myDiagram.findNodeForKey("confluence");
+          if (confluenceNode) {
+            const confluenceShape = confluenceNode.findObject("SHAPE");
+            if (confluenceShape) {
+              confluenceShape.fill = confluenceNode.data.color;
+              confluenceShape.stroke = confluenceNode.data.borderColor;
+            }
+          }
+          
+          // Hoàn thành tất cả các bước trong Action Plan
+          updateActionPlan(5, false); // Đánh dấu tất cả bước đã hoàn thành
+          
+          // Planning Agent kết thúc action plan
+          highlightNode("planning");
+          updateCurrentAction("confluence", "", false);
+          updateCurrentAction("planning", "Hoàn thành toàn bộ action plan ✓", true);
+          addLogEntry("planning", "Planning Agent: Hoàn thành toàn bộ action plan ✓");
+          updateMessage("Planning Agent đã hoàn thành toàn bộ action plan. Tất cả các nhiệm vụ đã được thực hiện thành công! ✓");
+          
+          // Phản hồi của user
+          await sleep(2000);
+          // Reset màu Planning Agent trước khi highlight User
+          if (planningNode) {
+            const planningShape = planningNode.findObject("SHAPE");
+            if (planningShape) {
+              planningShape.fill = planningNode.data.color;
+              planningShape.stroke = planningNode.data.borderColor;
+            }
+          }
+          
+          highlightNode("user");
+          updateCurrentAction("planning", "", false);
+          updateCurrentAction("user", "Cảm ơn!", true);
+          addLogEntry("user", "User: Cảm ơn!");
+          await sleep(1000);
+          
+          // Reset màu User node khi kết thúc
+          const userNode = myDiagram.findNodeForKey("user");
+          if (userNode) {
+            const userShape = userNode.findObject("SHAPE");
+            if (userShape) {
+              userShape.fill = userNode.data.color;
+              userShape.stroke = userNode.data.borderColor;
+            }
+          }
+        } finally {
+          // Dọn dẹp khi animation kết thúc hoặc bị gián đoạn
+          animationRunning = false;
+          startButton.disabled = false;
+          pauseButton.disabled = true;
+          continueButton.disabled = true;
+        }
+      }
+      
+      // Thêm event listener trực tiếp (không phụ thuộc vào DOMContentLoaded)
+      window.onload = function() {
+        // Gọi hàm startAnimation từ phạm vi window
+        window.runAgentAnimation = startAnimation;
+        window.resetDemo = resetDemo;
+      };
+    });
+  </script>
+</body>
+</html> 
