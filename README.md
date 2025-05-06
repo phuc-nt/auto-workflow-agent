@@ -31,36 +31,125 @@ Hệ thống bao gồm các thành phần chính:
 - **LLM Integration**: OpenAI API (GPT-4, GPT-4 mini)
 - **API Documentation**: Swagger
 
-## Cài đặt và chạy
+## Hướng dẫn cài đặt
 
 ### Yêu cầu hệ thống
 
 - Node.js 16+
 - npm hoặc yarn
+- Git
+- SQLite (dev) hoặc PostgreSQL (prod)
 - Tài khoản OpenAI API
 
-### Cài đặt và cấu hình
+### Cài đặt chi tiết
 
-1. Clone repository:
+1. **Clone repository**:
 ```bash
-git clone https://github.com/yourusername/auto-workflow-agent.git
+git clone https://github.com/phuc-nt/auto-workflow-agent.git
 cd auto-workflow-agent
 ```
 
-2. Cài đặt dependencies:
+2. **Cài đặt dependencies**:
 ```bash
 npm install
 ```
 
-3. Tạo file .env từ mẫu:
+3. **Tạo file .env từ mẫu**:
 ```bash
 cp .env.example .env
 ```
 
-4. Cấu hình các biến môi trường trong .env:
+4. **Build dự án**:
+```bash
+npm run build
 ```
-OPENAI_API_KEY=your_api_key
+
+### Gỡ lỗi cài đặt thường gặp
+
+- **Lỗi PORT đã được sử dụng**: Thay đổi cổng trong file .env hoặc kiểm tra các tiến trình đang chạy:
+  ```bash
+  lsof -i :3001  # Kiểm tra tiến trình đang sử dụng cổng 3001
+  ```
+
+## Hướng dẫn cấu hình
+
+### Cấu hình cơ bản (.env)
+
+```
+# Cấu hình cơ bản
 PORT=3001
+NODE_ENV=development
+
+# Database
+DB_HOST=localhost
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=
+DB_DATABASE=dev-assist
+
+# OpenAI
+OPENAI_API_KEY=syour_openai_api_key
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+### Cấu hình nâng cao
+
+#### Project Config (src/config/project_config_demo.json)
+
+File cấu hình chứa thông tin về dự án, thành viên, và các công cụ được tích hợp:
+
+```json
+{
+  "project": {
+    "name": "Project X",
+    "key": "XDEMO",
+    "members": [
+      {
+        "id": "user123",
+        "name": "Nguyễn Văn A",
+        "email": "a@example.com",
+        "slack": "U123456"
+      }
+    ]
+  }
+}
+```
+
+#### Cấu hình LLM (src/config/llm.config.ts)
+
+Tùy chỉnh mô hình và prompt template:
+
+```typescript
+/**
+ * Cấu hình mặc định cho LLM
+ */
+export const DEFAULT_LLM_CONFIG: LLMConfig = {
+  model: 'gpt-4.1-mini', // Default model
+  temperature: 0.7, // Default temperature
+};
+
+/**
+ * Cấu hình prompt cho từng thành phần
+ */
+export const PROMPT_CONFIGS: Record<string, PromptConfig> = {
+  inputProcessor: {
+    systemPrompt: `
+Bạn là một AI assistant được thiết kế để phân tích yêu cầu người dùng và chuyển thành mô tả chi tiết.
+
+Với mỗi yêu cầu, hãy:
+1. Phân tích ý định chính
+2. Xác định các thông tin quan trọng (user, project, time, etc.)
+3. Mô tả chi tiết những gì người dùng muốn thực hiện
+...`,
+    examples: [
+      // Ví dụ về input/output
+    ]
+  },
+  actionPlanner: {
+    systemPrompt: `...` 
+  },
+  // ... các cấu hình khác
+};
 ```
 
 ### Chạy ứng dụng
@@ -106,10 +195,12 @@ npm run test
 
 Xem thêm tài liệu chi tiết:
 
-- Kiến trúc tổng quan: `docs/presentations/ai_agent_development_guide_part1.md`
-- Chi tiết Central Agent: `docs/presentations/ai_agent_development_guide_part2.md`
-- Kế hoạch triển khai: `docs/implementation/central_agent/implementation_plan.md`
-- Kịch bản kiểm thử: `docs/testing/central_agent_test/central_agent_complex_scenarios.md`
+- Kiến trúc tổng quan: [`docs/knowledge/ai_agent_development_guide_part1.md`](docs/knowledge/ai_agent_development_guide_part1.md)
+- Chi tiết Central Agent: [`docs/knowledge/ai_agent_development_guide_part2.md`](docs/knowledge/ai_agent_development_guide_part2.md)
+- Kế hoạch triển khai: [`docs/implementation/implementation_plan.md`](docs/implementation/implementation_plan.md)
+- Kịch bản kiểm thử: [`docs/testing/central_agent_complex_scenarios.md`](docs/testing/central_agent_complex_scenarios.md)
+- Tham khảo API: [`docs/dev-guide/tool_api_reference/`](docs/dev-guide/tool_api_reference/)
+- Prompts: [`docs/dev-guide/prompts/central_agent_prompts.md`](docs/dev-guide/prompts/central_agent_prompts.md)
 
 ## License
 

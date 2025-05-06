@@ -1,55 +1,52 @@
-# Tài liệu DevAssist Bot
+# Tài liệu Auto Workflow Agent
 
-Thư mục này chứa tất cả tài liệu liên quan đến thiết kế, triển khai, kiểm thử và vận hành DevAssist Bot. Mục đích là cung cấp thông tin đầy đủ và cập nhật về hệ thống cho cả developer và người dùng.
+Thư mục này chứa toàn bộ tài liệu của dự án Auto Workflow Agent. Bộ tài liệu được cấu trúc để phục vụ nhiều mục đích khác nhau: từ học tập, phát triển, triển khai đến kiểm thử.
 
-## Cấu trúc thư mục
+## Cấu trúc tài liệu
 
-- **`design/`** - Tài liệu thiết kế
-  - `central_agent/` - Thiết kế Central Agent
-  - `prompts/` - Định nghĩa prompt và function definitions cho LLM
-  - `tool_api_reference/` - Tài liệu tham khảo API của các công cụ bên ngoài
+### 📁 knowledge
+Chứa kiến thức, bài học và hướng dẫn tổng hợp từ quá trình phát triển thực tế. Đây là nơi lưu trữ tài liệu có giá trị chia sẻ với cộng đồng.
 
-- **`implementation/`** - Tài liệu hướng dẫn triển khai
-  - `central_agent/` - Chi tiết triển khai Central Agent
+- [**ai_agent_development_guide_part1.md**](knowledge/ai_agent_development_guide_part1.md): Giới thiệu tổng quan về kiến trúc và các khái niệm cơ bản
+- [**ai_agent_development_guide_part2.md**](knowledge/ai_agent_development_guide_part2.md): Chi tiết về Central Agent và cách xây dựng hệ thống
 
-- **`testing/`** - Tài liệu kiểm thử
-  - `central_agent_test/` - Kế hoạch kiểm thử Central Agent
-  - `sub_agent_test/` - Kế hoạch kiểm thử Sub-Agent
+### 📁 requirements
+Mô tả các yêu cầu chức năng và phi chức năng của hệ thống.
 
-- **`requirements/`** - Tài liệu yêu cầu
-  - `requirement_v1.md` - Tài liệu yêu cầu gốc, mô tả chi tiết về ý tưởng
+- [**requirement_v1.md**](requirements/requirement_v1.md): Tài liệu yêu cầu phiên bản 1, bao gồm tổng quan, kiến trúc và các kịch bản sử dụng
 
-- **`presentations/`** - Tài liệu trình bày và minh họa
-  - `agent_workflow_explain_en.html` - Animation minh họa luồng hoạt động (tiếng Anh)
-  - `agent_workflow_explain_vi.html` - Animation minh họa luồng hoạt động (tiếng Việt)
-  - `assets/` - Tài nguyên hỗ trợ cho files trình bày (CSS, JS, fonts)
+### 📁 implementation
+Kế hoạch và chi tiết triển khai hệ thống.
 
-- **`product_management/`** - Tài liệu quản lý sản phẩm
+- [**implementation_plan.md**](implementation/implementation_plan.md): Kế hoạch triển khai chi tiết, phân chia theo các giai đoạn và bài học kinh nghiệm
 
-- **`api_reference/`** - Tài liệu tham khảo API của hệ thống
+### 📁 testing
+Các kịch bản kiểm thử để đánh giá hệ thống.
 
-## Quy ước đặt tên
+- [**central_agent_complex_scenarios.md**](testing/central_agent_complex_scenarios.md): Mô tả các kịch bản kiểm thử phức tạp cho Central Agent
 
-- Tên file sử dụng snake_case
-- Tất cả tài liệu viết bằng Markdown
-- Đặt tên file mô tả rõ nội dung, ví dụ: `central_agent_basic_design.md`
-- Mỗi thư mục con có một file README.md giải thích mục đích và nội dung của thư mục đó
+### 📁 dev-guide
+Hướng dẫn chi tiết cho nhà phát triển mới.
 
-## Hướng dẫn cập nhật tài liệu
+#### 📁 dev-guide/prompts
+- [**central_agent_prompts.md**](dev-guide/prompts/central_agent_prompts.md): Template prompt cho các thành phần của Central Agent
 
-1. Đảm bảo tài liệu được đặt đúng thư mục theo phân loại
-2. Cập nhật README.md của thư mục tương ứng nếu thêm tài liệu mới
-3. Sử dụng các liên kết tương đối để tham chiếu giữa các tài liệu
-4. Đảm bảo tài liệu được cập nhật đồng bộ với code
+#### 📁 dev-guide/tool_api_reference
+Tài liệu tham khảo API cho các công cụ tích hợp:
+- [**jira_api_reference.md**](dev-guide/tool_api_reference/jira_api_reference.md): Tài liệu tham khảo API JIRA
+- [**slack_api_reference.md**](dev-guide/tool_api_reference/slack_api_reference.md): Tài liệu tham khảo API Slack
+- [**confluence_api_reference.md**](dev-guide/tool_api_reference/confluence_api_reference.md): Tài liệu tham khảo API Confluence
+
+### 📁 presentations
+Tài liệu trình bày và giải thích luồng hoạt động của hệ thống.
+
+- [**agent_workflow_explain_vi.html**](presentations/agent_workflow_explain_vi.html): Trình bày luồng hoạt động bằng tiếng Việt
+- [**agent_workflow_explain_en.html**](presentations/agent_workflow_explain_en.html): Trình bày luồng hoạt động bằng tiếng Anh
 
 ## Lưu ý
+Bộ tài liệu được phát triển theo phương pháp "vừa làm vừa học". Thay vì thiết kế chi tiết từ đầu, chúng tôi xây dựng dần dần và tổng hợp kiến thức, kinh nghiệm từ thực tế phát triển.
 
-- Các file cấu hình hệ thống được đặt trong thư mục `config/` ở thư mục gốc, không nằm trong `docs/`
-- File cấu hình mẫu cho dự án (`project_config_demo.json`) nằm trong thư mục `config/`
-- Các tài nguyên hỗ trợ (CSS, JS, fonts) cho files trình bày được đặt trong thư mục `presentations/assets/` thay vì một thư mục assets riêng biệt
+Những tài liệu trong thư mục `knowledge` đặc biệt có giá trị cho những ai muốn tìm hiểu về cách xây dựng một hệ thống AI Agent theo kiến trúc Central-Sub Agent.
 
-## Liên hệ
-
-Nếu có bất kỳ câu hỏi hoặc đề xuất về tài liệu, vui lòng liên hệ:
-- Email: [dev@devassist.com](mailto:dev@devassist.com)
-- Slack: #devassist-documentation 
+## Đóng góp
+Chúng tôi rất hoan nghênh mọi đóng góp để cải thiện bộ tài liệu. Nếu bạn có bất kỳ đề xuất nào, vui lòng tạo issue hoặc pull request. 
