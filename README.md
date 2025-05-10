@@ -202,6 +202,140 @@ Xem thêm tài liệu chi tiết:
 - Tham khảo API: [`docs/dev-guide/tool_api_reference/`](docs/dev-guide/tool_api_reference/)
 - Prompts: [`docs/dev-guide/prompts/central_agent_prompts.md`](docs/dev-guide/prompts/central_agent_prompts.md)
 
+## Luồng xử lý tự động hóa
+
+### Cách hệ thống Agent hoạt động
+
+Auto Workflow Agent hoạt động dựa trên mô hình phối hợp thông minh giữa các agent chuyên biệt. Khi bạn gửi một yêu cầu đơn giản như "Tôi đã xong việc hôm nay", hệ thống sẽ thực hiện một loạt các hành động phức tạp để tự động hóa quy trình làm việc của bạn.
+
+#### Minh họa luồng xử lý
+
+```mermaid
+flowchart TD
+    User[Người dùng] -->|Gửi yêu cầu| Planning[Planning Agent]
+    Planning -->|Tạo kế hoạch| ActionPlan[Action Plan]
+    Planning -->|Ra lệnh| Jira[Jira Agent]
+    Planning -->|Ra lệnh| Slack[Slack Agent]
+    Planning -->|Ra lệnh| Confluence[Confluence Agent]
+    
+    style User fill:#e6f7ff,stroke:#1890ff
+    style Planning fill:#f6ffed,stroke:#52c41a
+    style Jira fill:#fff1f0,stroke:#ff4d4f
+    style Slack fill:#fffbe6,stroke:#faad14
+    style Confluence fill:#f9f0ff,stroke:#722ed1
+    style ActionPlan fill:#f0f7ff,stroke:#1677ff
+```
+
+#### Quy trình thực tế
+
+Ví dụ với câu lệnh **"Tôi đã xong việc hôm nay"**, hệ thống sẽ hoạt động như sau:
+
+1. **Người dùng gửi yêu cầu**
+   - Bạn chỉ cần gửi một câu đơn giản "Tôi đã xong việc hôm nay"
+
+2. **Planning Agent phân tích và lập kế hoạch**
+   - Hiểu yêu cầu của bạn và tạo kế hoạch hành động chi tiết
+   - Tự động chia công việc thành các bước nhỏ: kiểm tra công việc, xem logs, cập nhật trạng thái...
+
+3. **Thực hiện từng bước tự động**
+   - **Bước 1**: Jira Agent tìm kiếm các task đang xử lý của bạn hôm nay
+   - **Bước 2**: Slack Agent tìm các tin nhắn liên quan đến task để nắm bắt tình hình
+   - **Bước 3**: Jira Agent cập nhật trạng thái task thành "Done" và log thời gian làm việc
+   - **Bước 4**: Confluence Agent tạo ghi chú cho daily meeting với thông tin về công việc đã hoàn thành
+
+4. **Tất cả diễn ra tự động, nhanh chóng**
+   - Thay vì phải mở nhiều ứng dụng và thực hiện thủ công từng bước
+   - Hệ thống tự động thực hiện mọi thứ, tiết kiệm thời gian và đảm bảo không bỏ sót bước nào
+
+### Lợi ích cho người dùng
+
+- **Đơn giản hóa công việc**: Bạn chỉ cần nói yêu cầu bằng ngôn ngữ tự nhiên
+- **Tiết kiệm thời gian**: Hệ thống tự động thực hiện các tác vụ lặp đi lặp lại
+- **Giảm thiểu sai sót**: Không còn quên log work hay cập nhật trạng thái
+- **Tích hợp liền mạch**: Kết nối tất cả các công cụ làm việc: Jira, Slack, Confluence...
+
+Bất kể bạn có kiến thức kỹ thuật hay không, Auto Workflow Agent đều giúp tự động hóa quy trình làm việc của bạn một cách thông minh và hiệu quả.
+
+### Chi tiết kỹ thuật
+
+Luồng xử lý bên trong hệ thống diễn ra qua các bước sau:
+
+```mermaid
+sequenceDiagram
+    participant User as Người dùng
+    participant Central as Central Agent
+    participant Planning as Planning Agent
+    participant SubAgents as Sub-Agents
+    
+    User->>Central: Gửi yêu cầu
+    Central->>Planning: Chuyển yêu cầu
+    Planning->>Planning: Phân tích yêu cầu
+    Planning->>Planning: Tạo kế hoạch hành động
+    
+    loop Thực hiện từng bước
+        Planning->>SubAgents: Gửi lệnh cho Sub-Agent phù hợp
+        SubAgents->>SubAgents: Thực thi lệnh
+        SubAgents-->>Planning: Trả kết quả
+        Planning->>Planning: Đánh giá kết quả
+    end
+    
+    Planning-->>Central: Hoàn thành kế hoạch
+    Central-->>User: Thông báo kết quả
+```
+
+#### Cơ chế hoạt động bên trong
+
+1. **Central Agent** nhận yêu cầu từ người dùng và điều phối toàn bộ quá trình
+   - Input Processor phân tích yêu cầu ban đầu
+   - Chuyển giao yêu cầu tới Planning Agent
+   
+2. **Planning Agent** sử dụng AI để:
+   - Hiểu ngữ cảnh yêu cầu
+   - Phân tích thông tin cần thiết
+   - Tạo kế hoạch hành động chi tiết
+   - Chia nhỏ thành các bước cụ thể
+
+3. **Sub-Agents** hoạt động theo lệnh từ Planning:
+   - Mỗi Sub-Agent chuyên biệt cho một công cụ (Jira, Slack, Confluence...)
+   - Nhận lệnh tương ứng với bước trong kế hoạch
+   - Giao tiếp với API của công cụ tương ứng
+   - Trả kết quả về Planning Agent
+   
+4. **Kết quả cuối cùng**:
+   - Planning Agent tổng hợp kết quả từ tất cả Sub-Agents
+   - Central Agent trình bày kết quả theo định dạng dễ hiểu
+   - Thông báo cho người dùng về trạng thái hoàn thành
+
+Tất cả các tương tác giữa các Agent được thiết kế để tự động và liền mạch, không yêu cầu can thiệp thủ công trong quá trình thực hiện.
+
+### Ví dụ tương tác thực tế
+
+Dưới đây là ví dụ về cuộc hội thoại thực tế giữa người dùng và hệ thống:
+
+```
+👤 Người dùng: Tôi đã xong việc hôm nay.
+
+🤖 Agent: Tôi sẽ giúp bạn hoàn tất công việc cuối ngày. Đang xử lý...
+
+🤖 Agent: Đã tìm thấy các task của bạn hôm nay:
+   - XDEMO2-6: "Cập nhật tính năng đăng nhập" (In Progress)
+   
+🤖 Agent: Đã kiểm tra tin nhắn Slack liên quan đến task XDEMO2-6.
+   Tìm thấy 3 tin nhắn từ bạn trong kênh #project-channel.
+
+🤖 Agent: Đã cập nhật task XDEMO2-6:
+   - Trạng thái: Done ✓
+   - Log work: 8h ✓
+   
+🤖 Agent: Đã tạo ghi chú cho Daily Meeting ngày mai với nội dung:
+   "Hoàn thành task XDEMO2-6: Cập nhật tính năng đăng nhập. 
+    Chi tiết: Đã sửa lỗi xác thực và cải thiện trải nghiệm đăng nhập."
+
+🤖 Agent: Đã hoàn thành tất cả các bước trong quy trình. Chúc bạn nghỉ ngơi tốt! 😊
+```
+
+Toàn bộ quy trình trên diễn ra tự động, không cần thêm bất kỳ input nào từ người dùng. Hệ thống thực hiện đồng thời nhiều tác vụ mà bình thường bạn phải làm thủ công qua nhiều ứng dụng khác nhau.
+
 ## License
 
 [MIT Licensed](LICENSE)
