@@ -71,12 +71,22 @@ There are several ways to implement Sub-agents, each with its own pros and cons:
 Model Context Protocol (MCP) is an open protocol that allows AI models to interact with external data sources and systems in a standardized way. MCP solves a key challenge: how can AI safely and efficiently access and interact with real-world data and functions.
 
 ```mermaid
-graph TD
-    A[AI Model] -->|MCP Request| B[MCP Server]
-    B -->|Accesses Data/Functions| C[External Systems]
-    C -->|Returns Data/Results| B
-    B -->|MCP Response| A
+graph LR
+    AI["AI Model<br>(Central Agent)"] <--> MC["MCP Client"]
+    MC <--> MS["MCP Server"]
+    MS <--> BE1["JIRA System"]
+    MS <--> BE2["Slack System"]
+    MS <--> BE3["Other Systems..."]
+    
+    style AI fill:#f9f,stroke:#333
+    style MC fill:#bbf,stroke:#333
+    style MS fill:#bfb,stroke:#333
 ```
+
+MCP provides a structured framework to:
+- Query data from multiple sources
+- Perform actions on external systems
+- Ensure consistency in interactions between AI and external systems
 
 ### 2.2 Why MCP?
 
