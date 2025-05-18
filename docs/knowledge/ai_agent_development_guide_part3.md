@@ -146,7 +146,9 @@ Tools là các chức năng cho phép AI thực hiện hành động thay đổi
 
 ## 3. Triển khai Sub-agent sử dụng MCP
 
-### 3.1 Kiến trúc Sub-agent với MCP
+### 3.1 Kiến trúc và quy trình giao tiếp MCP Sub-agent
+
+Sub-agent MCP được xây dựng với kiến trúc tiêu chuẩn cho phép đồng thời tách biệt logic xử lý và đơn giản hóa tương tác API. Dưới đây là hai biểu đồ minh họa cả cấu trúc tĩnh và luồng giao tiếp động trong quá trình xử lý yêu cầu.
 
 ```mermaid
 graph TD
@@ -164,13 +166,55 @@ graph TD
     style MCPServer fill:#bfb,stroke:#333
 ```
 
-Đặc điểm của kiến trúc này:
-1. Agent Coordinator gọi Sub-agent với lệnh dạng ngôn ngữ tự nhiên
-2. Sub-agent sử dụng Prompt Processor để phân tích yêu cầu
-3. Sub-agent xác định resource/tool MCP cần gọi
-4. MCP Client gửi yêu cầu đến MCP Server
-5. MCP Server tương tác với API thực tế
-6. Kết quả được trả lại theo chuỗi ngược lại
+Mỗi thành phần trong hệ thống đảm nhận một vai trò rõ ràng:
+
+- **Agent Coordinator**: Điều phối yêu cầu đến đúng Sub-agent chuyên biệt
+- **Prompt Processor**: Chuyển đổi ngôn ngữ tự nhiên thành ý định và thực thể
+- **MCP Client**: Kết nối và gửi yêu cầu đến MCP Server theo chuẩn MCP
+- **MCP Server**: Chuyển đổi yêu cầu MCP thành API call tương ứng
+
+Luồng xử lý một yêu cầu được mô tả chi tiết trong sequence diagram sau:
+
+```mermaid
+sequenceDiagram
+    participant AC as Agent Coordinator
+    participant SA as Sub-agent
+    participant PP as Prompt Processor
+    participant MC as MCP Client
+    participant MS as MCP Server
+    participant API as External API
+    
+    Note over AC: Nhận yêu cầu từ Action Planner
+    AC->>SA: executePrompt("Tìm tất cả issue dự án PROJ đang mở")
+    Note over AC: Phân tích và định tuyến yêu cầu
+    SA->>PP: Phân tích ngữ nghĩa (project=PROJ, status=open)
+    PP-->>SA: Xác định resource/tool phù hợp
+    
+    alt Đọc dữ liệu (Resource)
+        SA->>MC: readResource("jira://issues?project=PROJ&status=open")
+        MC->>MS: HTTP GET với URI và params
+        MS->>API: GET /rest/api/3/search?jql=...
+        API-->>MS: JSON response
+    else Thực hiện hành động (Tool)
+        SA->>MC: executeTool("createIssue", {...})
+        MC->>MS: HTTP POST với tool params
+        MS->>API: POST /rest/api/3/issue
+        API-->>MS: Response
+    end
+    
+    MS-->>MC: Dữ liệu có cấu trúc
+    MC-->>SA: Kết quả xử lý
+    SA-->>AC: StepResult
+    Note over AC: Xử lý kết quả và trả về Action Planner
+```
+
+Các đặc điểm nổi bật của kiến trúc MCP Sub-agent:
+
+1. **Chuyển đổi ngôn ngữ**: Tự động phân tích yêu cầu tự nhiên thành lệnh MCP
+2. **Tách biệt concerns**: Logic Sub-agent tách biệt khỏi chi tiết API
+3. **Chuẩn hóa giao diện**: Thống nhất giao thức giao tiếp giữa các hệ thống
+4. **Hỗ trợ đọc/ghi**: Đồng thời hỗ trợ truy vấn dữ liệu và thực hiện hành động
+5. **Bảo mật**: Kiểm soát quyền truy cập chính xác đến từng resource/tool
 
 ### 3.2 Lợi ích của Sub-agent dựa trên MCP
 
@@ -179,31 +223,6 @@ graph TD
 3. **Khả năng mở rộng**: Dễ dàng thêm resource/tool mới mà không ảnh hưởng đến Central Agent
 4. **Bảo mật cao hơn**: Kiểm soát chính xác dữ liệu và hành động mà AI có thể thực hiện
 5. **Tái sử dụng**: MCP Server có thể được sử dụng bởi nhiều ứng dụng AI khác nhau
-
-### 3.3 Quy trình giao tiếp MCP Sub-agent
-
-Dưới đây là quy trình cơ bản khi một yêu cầu được xử lý thông qua MCP. Luồng này áp dụng cho bất kỳ Sub-agent MCP nào, bất kể nó kết nối với hệ thống gì:
-
-```mermaid
-sequenceDiagram
-    participant CA as Central Agent
-    participant SA as Sub-agent
-    participant MC as MCP Client
-    participant MS as MCP Server
-    participant API as External API
-    
-    CA->>SA: executePrompt("Tìm tất cả issue dự án PROJ")
-    SA->>SA: Phân tích yêu cầu
-    SA->>MC: readResource("jira://issues?project=PROJ")
-    MC->>MS: Gửi yêu cầu resource
-    MS->>API: GET /rest/api/3/search?jql=project=PROJ
-    API-->>MS: Trả về danh sách issue
-    MS-->>MC: Trả về dữ liệu có cấu trúc
-    MC-->>SA: Dữ liệu issues
-    SA-->>CA: Kết quả StepResult với danh sách issue
-```
-
-Quy trình này cho thấy cách MCP chuyển đổi giữa yêu cầu ngôn ngữ tự nhiên thành các API call cụ thể, và ngược lại, chuyển đổi kết quả API thành dữ liệu có cấu trúc mà AI có thể hiểu được.
 
 ## 4. MCP Atlassian Server
 
