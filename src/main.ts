@@ -66,8 +66,8 @@ async function bootstrap() {
   // Graceful shutdown
   app.enableShutdownHooks();
 
-  // Lấy cổng từ biến môi trường hoặc sử dụng 3001 
-  const port = process.env.PORT || 3001;
+  // Lấy cổng từ biến môi trường hoặc sử dụng 3003 để tránh xung đột
+  const port = process.env.PORT || 3003;
   await app.listen(port);
   
   const serverUrl = `http://localhost:${port}`;

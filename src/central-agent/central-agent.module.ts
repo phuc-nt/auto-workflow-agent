@@ -14,13 +14,19 @@ import { MockJiraAgent } from './agents/mock-jira-agent';
 import { MockSlackAgent } from './agents/mock-slack-agent';
 import { MockConfluenceAgent } from './agents/mock-confluence-agent';
 import { MockCalendarAgent } from './agents/mock-calendar-agent';
+import { MCPJiraAgent } from './agents/mcp-jira-agent';
+import { MCPConfluenceAgent } from './agents/mcp-confluence-agent';
+import { MCPClientModule } from '../mcp-client/mcp-client.module';
 import { ConfigModule } from '../config/config.module';
 import { ResultSynthesizerService } from './result-synthesizer/result-synthesizer.service';
+import { PromptAnalyzerModule } from './prompt-analyzer/prompt-analyzer.module';
 
 @Module({
   imports: [
     OpenaiModule,
     ConfigModule,
+    MCPClientModule,
+    PromptAnalyzerModule,
     TypeOrmModule.forFeature([ActionPlanEntity]),
   ],
   controllers: [CentralAgentController],
@@ -35,6 +41,8 @@ import { ResultSynthesizerService } from './result-synthesizer/result-synthesize
     MockSlackAgent,
     MockConfluenceAgent,
     MockCalendarAgent,
+    MCPJiraAgent,
+    MCPConfluenceAgent,
     AgentFactory,
     ResultSynthesizerService
   ],

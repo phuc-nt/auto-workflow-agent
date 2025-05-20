@@ -5,6 +5,9 @@ import { MockJiraAgent } from '../agents/mock-jira-agent';
 import { MockSlackAgent } from '../agents/mock-slack-agent';
 import { MockConfluenceAgent } from '../agents/mock-confluence-agent';
 import { MockCalendarAgent } from '../agents/mock-calendar-agent';
+import { MCPJiraAgent } from '../agents/mcp-jira-agent';
+import { MCPConfluenceAgent } from '../agents/mcp-confluence-agent';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * Interface đại diện cho một Sub-Agent
@@ -19,19 +22,35 @@ export interface IAgent {
 @Injectable()
 export class AgentFactory {
   private readonly logger = EnhancedLogger.getLogger(AgentFactory.name);
+  private readonly useMCP: boolean;
   
   constructor(
     private readonly mockJiraAgent: MockJiraAgent,
     private readonly mockSlackAgent: MockSlackAgent,
     private readonly mockConfluenceAgent: MockConfluenceAgent,
     private readonly mockCalendarAgent: MockCalendarAgent,
-  ) {}
+    private readonly mcpJiraAgent: MCPJiraAgent,
+    private readonly mcpConfluenceAgent: MCPConfluenceAgent,
+    private readonly configService: ConfigService,
+  ) {
+    this.useMCP = this.configService.get<boolean>('USE_MCP_AGENTS', false);
+    this.logger.log(`Agent Factory initialized with MCP ${this.useMCP ? 'enabled' : 'disabled'}`);
+  }
   
   /**
    * Tạo agent phù hợp dựa vào loại
    */
   getAgent(agentType: AgentType): IAgent {
     this.logger.debug(`Creating agent for type: ${agentType}`);
+    
+    if (this.useMCP) {
+      switch (agentType) {
+        case AgentType.JIRA:
+          return this.mcpJiraAgent;
+        case AgentType.CONFLUENCE:
+          return this.mcpConfluenceAgent;
+      }
+    }
     
     switch (agentType) {
       case AgentType.JIRA:
@@ -68,4 +87,4 @@ export class AgentFactory {
   createAgent(agentType: AgentType): IAgent {
     return this.getAgent(agentType);
   }
-} 
+}

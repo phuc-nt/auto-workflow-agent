@@ -134,9 +134,19 @@ export class ActionPlanner {
         };
       }
 
+      // Nếu đã retry 2 lần, dừng lại và trả về kết quả tốt nhất có thể
+      if (stepToEvaluate.retryCount && stepToEvaluate.retryCount >= 2) {
+        this.logger.warn(`Step ${stepToEvaluate.id} đã retry 2 lần, dừng lại và trả về kết quả tốt nhất có thể.`);
+        return {
+          success: true,
+          reason: 'Đã thử lại 2 lần nhưng không đạt đủ kỳ vọng, chấp nhận kết quả hiện tại và tổng hợp trả về cho người dùng.',
+          needsAdjustment: false,
+        };
+      }
+
       // Chuẩn bị prompt cho OpenAI để đánh giá kết quả
-      const systemPrompt = this.getStepEvaluationSystemPrompt();
-      const userPrompt = this.getStepEvaluationUserPrompt(stepToEvaluate, plan);
+      const systemPrompt = this.getStepEvaluationSystemPrompt(stepToEvaluate.retryCount || 0);
+      const userPrompt = this.getStepEvaluationUserPrompt(stepToEvaluate, plan, stepToEvaluate.retryCount || 0);
 
       // Gọi OpenAI API để đánh giá kết quả
       const response = await this.openaiService.chatWithFunctionCalling(
@@ -187,6 +197,73 @@ export class ActionPlanner {
         needsAdjustment: false,
       };
     }
+  }
+
+  /**
+   * System prompt cho việc đánh giá kết quả bước
+   * retryLevel = 0: khắt khe, 1: nới lỏng, 2: rất nới lỏng
+   */
+  private getStepEvaluationSystemPrompt(retryLevel: number = 0): string {
+    if (retryLevel === 0) {
+      return `
+Bạn là một AI assistant được thiết kế để đánh giá kết quả của một bước trong kế hoạch hành động.\n\nNhiệm vụ của bạn là:\n1. Xem xét kết quả từ sub-agent\n2. Đánh giá xem bước có thực sự thành công hay không, bất kể trạng thái success là true hay false\n3. Xác định xem có cần điều chỉnh kế hoạch không dựa trên ngữ cảnh và kết quả\n\nQUAN TRỌNG: Nếu kết quả đã trả về thông tin chính (ví dụ: danh sách dự án, danh sách task, ...) và có các trường cơ bản (ví dụ: tên, mã, trạng thái chính), thì coi là thành công, dù có thể thiếu một số trường chi tiết. Chỉ đánh giá là thất bại nếu kết quả hoàn toàn sai, không có dữ liệu chính hoặc dữ liệu không liên quan.\n\nTrả về đánh giá dưới dạng JSON với cấu trúc:\n{\n  "success": true/false,\n  "reason": "Lý do chi tiết cho đánh giá này",\n  "needsAdjustment": true/false\n}\n\nLưu ý:\n- Đôi khi sub-agent trả về success=true nhưng kết quả không đáp ứng yêu cầu\n- Có thể sub-agent trả về success=false nhưng vẫn cung cấp thông tin hữu ích\n\nQUAN TRỌNG: Trả về JSON thuần túy, không bọc trong markdown code block.`;
+    } else if (retryLevel === 1) {
+      return `
+Bạn là một AI assistant đánh giá kết quả bước trong kế hoạch hành động.\n\nLần thử lại này, hãy nới lỏng tiêu chí: Nếu kết quả đã trả về thông tin chính liên quan đến yêu cầu (dù thiếu nhiều trường phụ hoặc không đúng định dạng hoàn hảo), vẫn coi là thành công. Chỉ đánh giá là thất bại nếu hoàn toàn không có dữ liệu chính hoặc dữ liệu hoàn toàn không liên quan.\n\nTrả về đánh giá dưới dạng JSON với cấu trúc như trước.`;
+    } else {
+      return `
+Bạn là một AI assistant đánh giá kết quả bước trong kế hoạch hành động.\n\nĐây là lần thử lại cuối cùng. Nếu kết quả có bất kỳ thông tin nào liên quan đến yêu cầu, hãy coi là thành công. Chỉ đánh giá là thất bại nếu hoàn toàn không có dữ liệu hoặc dữ liệu hoàn toàn không liên quan.\n\nTrả về đánh giá dưới dạng JSON với cấu trúc như trước.`;
+    }
+  }
+
+  /**
+   * User prompt cho việc đánh giá kết quả bước
+   * retryLevel: số lần thử lại, càng cao càng nới lỏng yêu cầu
+   */
+  private getStepEvaluationUserPrompt(
+    step: ActionStep,
+    plan: ActionPlan,
+    retryLevel: number = 0,
+  ): string {
+    // Tạo mô tả về bước cần đánh giá
+    const stepDescription = `
+- ID: ${step.id}
+- Agent: ${step.agentType}
+- Prompt: "${step.prompt}"
+- Success flag từ agent: ${step.result?.success}
+    `;
+
+    // Tạo mô tả về kết quả
+    const resultDescription = JSON.stringify(step.result, null, 2);
+
+    let relaxNote = '';
+    if (retryLevel === 1) {
+      relaxNote = '\nLưu ý: Lần thử lại này, hãy nới lỏng tiêu chí, chỉ cần có thông tin chính là đủ.';
+    } else if (retryLevel >= 2) {
+      relaxNote = '\nLưu ý: Đây là lần thử lại cuối cùng, chỉ cần có bất kỳ thông tin liên quan nào cũng coi là thành công.';
+    }
+
+    return `
+Hãy đánh giá kết quả của bước sau trong kế hoạch:
+
+THÔNG TIN BƯỚC:
+${stepDescription}
+
+KẾT QUẢ TỪ SUB-AGENT:
+${resultDescription}
+
+NGỮ CẢNH KẾ HOẠCH:
+Mục tiêu tổng thể: Thực hiện yêu cầu của người dùng thông qua các sub-agent.
+Trạng thái kế hoạch: ${plan.status}
+Tiến độ: ${plan.overallProgress}%
+${relaxNote}
+
+Dựa trên thông tin trên, hãy đánh giá:
+1. Bước này có thực sự THÀNH CÔNG hay không (bất kể trạng thái thành công từ agent)
+2. Lý do chi tiết cho đánh giá của bạn
+3. Cần điều chỉnh kế hoạch không (true/false)
+
+Trả về đánh giá dưới dạng JSON.`;
   }
 
   /**
@@ -338,7 +415,7 @@ export class ActionPlanner {
 - Trong prompt của bước mới, hãy đưa đầy đủ thông tin từ các bước đã hoàn thành.`;
     } else {
       specialInstructions = `
-- Nếu lỗi liên quan đến việc không tìm được thời gian rảnh chung, hãy tạo kế hoạch mới chỉ xét các thành viên đã được chỉ định (${specifiedParticipants.join(', ')}).
+- Nếu lỗi liên quan đến việc không tìm được thời gian rảnh chung cho tất cả thành viên, hãy tạo kế hoạch mới chỉ xét các thành viên đã được chỉ định (${specifiedParticipants.join(', ')}).
 - Kế hoạch mới phải hoàn toàn độc lập với kế hoạch cũ.
 - ID của bước trong kế hoạch mới nên là "step1_new" hoặc tương tự, và KHÔNG có bất kỳ phụ thuộc nào (dependsOn: []).
 - Trong prompt của bước mới, hãy đưa đầy đủ thông tin từ các bước đã hoàn thành.`;
@@ -355,7 +432,7 @@ Mục tiêu: ${originalPlan.goal || 'Không có mục tiêu cụ thể'}
 
 BƯỚC BỊ LỖI:
 ID: ${failedStep.id}
-Agent: ${failedStep.agent}
+Agent: ${failedStep.agentType}
 Mô tả: ${failedStep.description || 'Không có mô tả'}
 Kết quả: ${JSON.stringify(failedStep.result || {}, null, 2)}
 
@@ -480,14 +557,14 @@ QUAN TRỌNG: Trả về JSON thuần túy, không bọc trong markdown code blo
     return this.getSystemPrompt();
   }
 
+  // Đã xoá getAutoCompletionPlan và getSpecialCasePrompt vì chỉ dùng cho test/mock agent
+
   private getUserPrompt(processedInput: string): string {
     return `Đây là yêu cầu của người dùng sau khi được phân tích:
     
     ${processedInput}
     
     Hãy tạo kế hoạch hành động để đáp ứng yêu cầu trên.
-    
-    ${this.getSpecialCasePrompt(processedInput)}
     
     Nhớ đảm bảo rằng kế hoạch phải hoàn chỉnh, có logic, và đủ chi tiết để các sub-agent có thể thực hiện.
     Trả về kết quả ở định dạng JSON theo cấu trúc đã được hướng dẫn.`;
@@ -613,104 +690,6 @@ Hãy tạo một kế hoạch mới phù hợp với tình huống hiện tại.
 4. Bao gồm đầy đủ thông tin cần thiết từ các bước đã hoàn thành
 
 Trả về kế hoạch điều chỉnh dưới dạng JSON.
-    `;
-  }
-
-  /**
-   * System prompt cho việc đánh giá kết quả bước
-   */
-  private getStepEvaluationSystemPrompt(): string {
-    return `
-Bạn là một AI assistant được thiết kế để đánh giá kết quả của một bước trong kế hoạch hành động.
-
-Nhiệm vụ của bạn là:
-1. Xem xét kết quả từ sub-agent
-2. Đánh giá xem bước có thực sự thành công hay không, bất kể trạng thái success là true hay false
-3. Xác định xem có cần điều chỉnh kế hoạch không dựa trên ngữ cảnh và kết quả
-
-Trả về đánh giá dưới dạng JSON với cấu trúc:
-{
-  "success": true/false,
-  "reason": "Lý do chi tiết cho đánh giá này",
-  "needsAdjustment": true/false
-}
-
-Lưu ý:
-- Đôi khi sub-agent trả về success=true nhưng kết quả không đáp ứng yêu cầu
-- Có thể sub-agent trả về success=false nhưng vẫn cung cấp thông tin hữu ích
-
-QUAN TRỌNG: Trả về JSON thuần túy, không bọc trong markdown code block.
-    `;
-  }
-
-  /**
-   * User prompt cho việc đánh giá kết quả bước
-   */
-  private getStepEvaluationUserPrompt(
-    step: ActionStep,
-    plan: ActionPlan,
-  ): string {
-    // Tạo mô tả về bước cần đánh giá
-    const stepDescription = `
-- ID: ${step.id}
-- Agent: ${step.agentType}
-- Prompt: "${step.prompt}"
-- Success flag từ agent: ${step.result?.success}
-    `;
-
-    // Tạo mô tả về kết quả
-    const resultDescription = JSON.stringify(step.result, null, 2);
-
-    return `
-Hãy đánh giá kết quả của bước sau trong kế hoạch:
-
-THÔNG TIN BƯỚC:
-${stepDescription}
-
-KẾT QUẢ TỪ SUB-AGENT:
-${resultDescription}
-
-NGỮ CẢNH KẾ HOẠCH:
-Mục tiêu tổng thể: Thực hiện yêu cầu của người dùng thông qua các sub-agent.
-Trạng thái kế hoạch: ${plan.status}
-Tiến độ: ${plan.overallProgress}%
-
-Dựa trên thông tin trên, hãy đánh giá:
-1. Bước này có thực sự THÀNH CÔNG hay không (bất kể trạng thái thành công từ agent)
-2. Lý do chi tiết cho đánh giá của bạn
-3. Cần điều chỉnh kế hoạch không (true/false)
-
-Trả về đánh giá dưới dạng JSON.
-    `;
-  }
-
-  private getSpecialCasePrompt(processedInput: string): string {
-    // Kiểm tra nếu là trường hợp "tôi xong việc hôm nay rồi"
-    if (
-      processedInput.toLowerCase().includes('hoàn thành') &&
-      (processedInput.toLowerCase().includes('công việc') ||
-        processedInput.toLowerCase().includes('task') ||
-        processedInput.toLowerCase().includes('nhiệm vụ'))
-    ) {
-      return this.getAutoCompletionPlan();
-    }
-
-    // Thêm các trường hợp đặc biệt khác nếu cần
-
-    return '';
-  }
-
-  private getAutoCompletionPlan(): string {
-    return `
-    Đây là trường hợp người dùng báo cáo đã hoàn thành công việc. Hãy tạo kế hoạch tự động thực hiện các bước sau mà KHÔNG cần hỏi thêm thông tin từ người dùng:
-    
-    1. Sử dụng JIRA agent để tìm các task đang trong trạng thái "In Progress" hoặc "To Do" của người dùng này.
-    2. Sử dụng SLACK agent để tìm các tin nhắn liên quan đến các task đó trong ngày hôm nay.
-    3. Sử dụng JIRA agent để cập nhật trạng thái các task sang "Done" dựa trên thông tin tìm được.
-    4. Sử dụng SLACK agent để thông báo về việc đã cập nhật các task.
-    5. Sử dụng CONFLUENCE agent để tạo/cập nhật daily report với các task đã hoàn thành.
-    
-    Đảm bảo các bước được sắp xếp logic, có thông tin dependency giữa các bước, và mỗi bước có hướng dẫn chi tiết.
     `;
   }
 
