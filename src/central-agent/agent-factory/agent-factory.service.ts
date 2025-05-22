@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AgentType, StepResult } from '../models/action-plan.model';
 import { EnhancedLogger } from '../../utils/logger';
-import { MockJiraAgent } from '../agents/mock-jira-agent';
-import { MockSlackAgent } from '../agents/mock-slack-agent';
-import { MockConfluenceAgent } from '../agents/mock-confluence-agent';
-import { MockCalendarAgent } from '../agents/mock-calendar-agent';
 import { MCPJiraAgent } from '../agents/mcp-jira-agent';
 import { MCPConfluenceAgent } from '../agents/mcp-confluence-agent';
 import { ConfigService } from '@nestjs/config';
@@ -25,10 +21,6 @@ export class AgentFactory {
   private readonly useMCP: boolean;
   
   constructor(
-    private readonly mockJiraAgent: MockJiraAgent,
-    private readonly mockSlackAgent: MockSlackAgent,
-    private readonly mockConfluenceAgent: MockConfluenceAgent,
-    private readonly mockCalendarAgent: MockCalendarAgent,
     private readonly mcpJiraAgent: MCPJiraAgent,
     private readonly mcpConfluenceAgent: MCPConfluenceAgent,
     private readonly configService: ConfigService,
@@ -54,30 +46,16 @@ export class AgentFactory {
     
     switch (agentType) {
       case AgentType.JIRA:
-        return this.mockJiraAgent;
-      case AgentType.SLACK:
-        return this.mockSlackAgent;
-      case AgentType.CALENDAR:
-        return this.mockCalendarAgent;
+        return this.useMCP ? this.mcpJiraAgent : this.createFallbackAgent();
       case AgentType.CONFLUENCE:
-        return this.mockConfluenceAgent;
+        return this.useMCP ? this.mcpConfluenceAgent : this.createFallbackAgent();
+      case AgentType.SLACK:
+      case AgentType.CALENDAR:
       case AgentType.EMAIL:
       case AgentType.MEETING_ROOM:
-        // Sử dụng Calendar agent cho meeting room
-        return this.mockCalendarAgent;
       default:
         this.logger.warn(`Không có agent cho loại ${agentType}, sử dụng fallback`);
-        // Fallback agent đơn giản
-        return {
-          executePrompt: async (prompt: string): Promise<StepResult> => {
-            await new Promise(resolve => setTimeout(resolve, 200));
-            return {
-              success: true,
-              data: { message: `Default agent executed: ${prompt}` },
-              metadata: { executionTime: 200, tokenUsage: 100 }
-            };
-          }
-        };
+        return this.createFallbackAgent();
     }
   }
   
@@ -86,5 +64,21 @@ export class AgentFactory {
    */
   createAgent(agentType: AgentType): IAgent {
     return this.getAgent(agentType);
+  }
+  
+  /**
+   * Tạo fallback agent đơn giản
+   */
+  private createFallbackAgent(): IAgent {
+    return {
+      executePrompt: async (prompt: string): Promise<StepResult> => {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        return {
+          success: true,
+          data: { message: `Default agent executed: ${prompt}` },
+          metadata: { executionTime: 200, tokenUsage: 100 }
+        };
+      }
+    };
   }
 }
