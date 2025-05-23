@@ -441,7 +441,6 @@ graph TD
     D -->|chứa| F[Danh sách issues]
     D -->|chứa| G[Thông tin phụ trợ]
 ```
-```
 
 ### 4.2 Ví dụ Mô hình Dữ liệu MCP Resource Confluence
 
@@ -467,7 +466,6 @@ graph TD
     D -->|chứa| F[Thông tin phiên bản]
     D -->|chứa| G[Nội dung trang]
     D -->|chứa| H[Liên kết]
-```
 ```
 
 ### 4.3 Ví dụ Khi Tool Được Gọi Thành Công
