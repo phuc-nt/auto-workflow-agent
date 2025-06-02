@@ -70,15 +70,15 @@ export class AgentFactory {
    * Tạo fallback agent đơn giản
    */
   private createFallbackAgent(): IAgent {
-    return {
-      executePrompt: async (prompt: string): Promise<StepResult> => {
-        await new Promise(resolve => setTimeout(resolve, 200));
         return {
-          success: true,
-          data: { message: `Default agent executed: ${prompt}` },
-          metadata: { executionTime: 200, tokenUsage: 100 }
+          executePrompt: async (prompt: string): Promise<StepResult> => {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            return {
+              success: true,
+              data: { message: `Default agent executed: ${prompt}` },
+              metadata: { executionTime: 200, tokenUsage: 100 }
+            };
+          }
         };
-      }
-    };
   }
 }
