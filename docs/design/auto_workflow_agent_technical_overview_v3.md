@@ -59,7 +59,7 @@ graph TD
 2.  **Central Agent** tiếp nhận yêu cầu.
 3.  Các thành phần bên trong Central Agent xử lý yêu cầu:
     *   **Config Reader**: Tải thông tin ngữ cảnh liên quan đến người dùng và dự án.
-    *   **Input Processor**: Phân tích yêu cầu của người dùng để hiểu ý định và trích xuất các thực thể quan trọng.
+    *   **Input Processor**: Phân tích yêu cầu của người dùng để hiểu rõ ý định và trích xuất các thực thể quan trọng.
     *   **Action Planner**: Dựa trên đầu ra của Input Processor, tạo ra một kế hoạch hành động (Action Plan) gồm nhiều bước (steps). Mỗi bước xác định Sub-Agent cần gọi và thông tin cho Sub-Agent đó.
     *   **Action Plan Storage**: Lưu trữ Action Plan.
     *   **Agent Coordinator**: Thực thi Action Plan. Nó gọi **Agent Factory** để lấy đối tượng Sub-Agent tương ứng cho từng bước.
@@ -207,7 +207,7 @@ sequenceDiagram
               "needsAdjustment": false
             }
             ```
-    3.  **Điều chỉnh Kế hoạch (Feedback Loop)**: Nếu `StepEvaluation` cho thấy `needsAdjustment` là `true` (ví dụ, bước gặp lỗi không thể retry hoặc kết quả không như mong đợi nhưng có thể có hướng giải quyết khác), `ActionPlanner` sẽ sử dụng LLM để tạo một kế hoạch mới (Adjusted Action Plan) dựa trên tình hình thất bại, kết quả của bước lỗi, và context hiện tại. Kế hoạch mới này sẽ được gửi lại cho `AgentCoordinator` để tiếp tục thực thi. Đây là vòng lặp phản hồi quan trọng giúp hệ thống linh hoạt và tự sửa lỗi.
+    3.  **Điều chỉnh Kế hoạch (Feedback Loop)**: Nếu `StepEvaluation` cho thấy `needsAdjustment` là `true` (ví dụ, bước gặp lỗi không thể retry hoặc kết quả không như mong đợi nhưng có thể có hướng giải quyết khác), `ActionPlanner` sẽ sử dụng LLM để tạo một kế hoạch mới (Adjusted Action Plan) dựa trên tình hình thất bại, kết quả của bước lỗi, và context hiện tại. Kế hoạch mới này sẽ được gửi lại cho `AgentCoordinator` để tiếp tục thực thi. Đây là vòng lặp phản hồi quan trọng giúp hệ thống linh hoạt và có khả năng tự sửa lỗi.
 
 ### 3.4. Action Plan Storage
 
@@ -272,8 +272,8 @@ sequenceDiagram
 *   **Ví dụ Output (`Synthesized Result`)** (cho trường hợp thất bại một phần):
     ```
     "Kết quả thực hiện kế hoạch như sau:
-
-Ở bước 1, hệ thống đã cố gắng truy xuất các task hiện tại mà người dùng tên 'Phuc' đang đảm nhiệm trên JIRA, nhưng gặp lỗi... Ở bước 2, ... hệ thống đã gửi tin nhắn tới tài khoản Slack của Phuc..."
+    Ở bước 1, hệ thống đã cố gắng truy xuất các task hiện tại mà người dùng tên 'Phuc' đang đảm nhiệm trên JIRA, nhưng gặp lỗi... 
+    Ở bước 2, ... hệ thống đã gửi tin nhắn tới tài khoản Slack của Phuc..."
     ```
 
 ## 4. Sub-Agents và Tích hợp Model Context Protocol (MCP)
@@ -393,19 +393,249 @@ LLM đóng vai trò then chốt ở nhiều giai đoạn:
 *   **Vòng lặp Phản hồi (Feedback Loop)**: Nếu một bước thất bại liên tục hoặc gặp lỗi không thể xử lý, và `StepEvaluation` từ `ActionPlanner` cho thấy `needsAdjustment=true`, `AgentCoordinator` sẽ yêu cầu `ActionPlanner` (thông qua `CentralAgentService`) tạo một kế hoạch mới hoặc điều chỉnh kế hoạch hiện tại. Cơ chế này giúp hệ thống linh hoạt và có khả năng tự sửa lỗi.
 *   **Logging**: Hệ thống sử dụng `EnhancedLogger` để ghi log chi tiết các bước xử lý và lỗi, giúp cho việc theo dõi và gỡ lỗi.
 
-## 8. Kết luận và Hướng Phát triển Tương lai
+## 8. Tổng kết và Hướng phát triển Tiếp theo
 
-Hệ thống Auto Workflow Agent với kiến trúc Central-Sub Agent và tích hợp MCP cung cấp một nền tảng mạnh mẽ và linh hoạt để tự động hóa các quy trình công việc. Việc sử dụng LLM ở nhiều giai đoạn (hiểu yêu cầu, lập kế hoạch, đánh giá bước, điều chỉnh kế hoạch, tổng hợp kết quả) giúp hệ thống hiểu và tương tác một cách thông minh, đồng thời tăng khả năng thích ứng và tự sửa lỗi.
+Auto Workflow Agent cung cấp một nền tảng mạnh mẽ để tự động hóa các quy trình công việc phức tạp bằng cách kết hợp khả năng của LLM và kiến trúc agent điều phối. Các cải tiến tiềm năng bao gồm:
 
-Các hướng phát triển tiềm năng:
-*   Mở rộng bộ Sub-Agent để hỗ trợ nhiều hệ thống và dịch vụ hơn (ví dụ: Calendar, Email).
-*   Cải thiện khả năng học hỏi và tự điều chỉnh của `ActionPlanner` và các LLM prompts.
-*   Tăng cường cơ chế xử lý lỗi và phục hồi, làm rõ hơn các kịch bản retry và điều chỉnh kế hoạch.
-*   Xây dựng giao diện người dùng thân thiện hơn để theo dõi và quản lý các Action Plan.
-*   Tối ưu hóa việc sử dụng LLM để giảm chi phí và độ trễ.
-*   Hoàn thiện và mở rộng `Atlassian MCP Server` với nhiều `resources` và `tools` hơn.
-*   Triển khai cơ sở dữ liệu bền vững hơn cho `ActionPlanStorage`.
+*   Mở rộng danh sách các Sub-Agent để hỗ trợ nhiều công cụ và dịch vụ hơn.
+*   Nâng cao khả năng tự học và tự điều chỉnh kế hoạch của `ActionPlanner`.
+*   Cải thiện giao diện người dùng để tương tác dễ dàng hơn.
+*   Tích hợp sâu hơn với các hệ thống quản lý dự án và giao tiếp hiện có.
+*   Tăng cường khả năng giám sát và gỡ lỗi cho các Action Plan đang chạy.
 *   Cải tiến `PromptAnalyzerService` cho MCP Agents để phân tích prompt hiệu quả hơn.
 
+## 9. Brainstorming: Các hướng cải thiện tiềm năng
+
+Dưới đây là ghi nhận về các ý tưởng và hướng cải thiện đã được thảo luận cho hệ thống Auto Workflow Agent:
+
+### Cải thiện 1: Nâng cao thông tin cho Action Planner và Sub-Agents
+
+*   **Vấn đề**: `Action Planner` và các `Sub-Agent` (như `MCPJiraAgent`) có thể chưa có đủ thông tin chi tiết về "năng lực" thực sự của các `MCP server` mà chúng tương tác.
+*   **Đề xuất**:
+    1.  **`Action Planner` biết Tool/Resource của MCP Server**:
+        *   `Action Planner` nên có khả năng truy cập (hoặc được cung cấp) danh sách các `Tool` (tập hợp các actions) và `Resource` (đối tượng dữ liệu) mà mỗi `MCP server` (ví dụ: Jira MCP Server, Confluence MCP Server) hỗ trợ.
+        *   Thông tin này cần bao gồm cả `description` (mô tả chi tiết) của từng action/tool/resource.
+        *   **Lợi ích**: Giúp `Action Planner` tạo ra các kế hoạch hành động (Action Plan) chính xác hơn, phù hợp hơn với khả năng thực tế của các `MCP server`. Giảm thiểu việc tạo ra các bước kế hoạch không khả thi.
+    2.  **`Sub-Agent` (ví dụ: `MCPJiraAgent`) lấy đủ thông tin Action từ MCP Server**:
+        *   Khi một `Sub-Agent` (như `MCPJiraAgent`) tương tác với `MCP Server`, nó cần đảm bảo lấy được đầy đủ thông tin về các "actions" mà server đó cung cấp.
+        *   Thông tin này phải bao gồm:
+            *   `uri`: Địa chỉ để gọi action.
+            *   `description`: Mô tả chi tiết về action, mục đích và cách hoạt động của nó.
+            *   `schema`: Cấu trúc dữ liệu đầu vào (input schema) và đầu ra (output schema) của action.
+        *   **Lợi ích**: Cung cấp cho `PromptAnalyzerService` (bên trong `Sub-Agent`) đầy đủ ngữ cảnh để phân tích prompt của người dùng một cách chính xác, từ đó xác định đúng "action" cần gọi trên `MCP Server` và chuẩn bị các "parameters" phù hợp dựa trên `schema`.
+*   **Ưu điểm của Cải thiện 1**:
+    *   Tăng độ chính xác và hiệu quả của `Action Planner` và `PromptAnalyzerService`.
+    *   Giữ được sự chuyên môn hóa của các `Sub-Agent`.
+    *   Hệ thống dễ bảo trì và mở rộng khi có thêm các `MCP service` mới.
+*   **Điểm cần cân nhắc của Cải thiện 1**:
+    *   Cần thiết kế luồng lấy và cập nhật thông tin `Tool`/`Resource`/`Action` từ `MCP server` một cách hiệu quả.
+    *   Có thể tăng một chút độ phức tạp trong việc quản lý và đồng bộ hóa thông tin.
+
+#### Sơ đồ Thành phần (Cải thiện 1)
+```mermaid
+flowchart TD
+    subgraph CentralAgent_Imp1[Central Agent]
+        AP_Imp1[Action Planner LLM]
+        AC_Imp1[Agent Coordinator]
+        PCR_Imp1[Config Reader]
+        IP_Imp1[Input Processor LLM]
+    end
+
+    subgraph SubAgent_Imp1[MCPJiraAgent Sub-Agent]
+        PAS_Imp1[PromptAnalyzerService LLM]
+        MCPClient_Imp1[MCP Client Logic]
+    end
+
+    MCPServer_Imp1[MCP Server e.g., Jira MCP]
+    CapabilitiesDB_Imp1[(MCP Capabilities: Tools, Resources, Schemas, Descriptions)]
+
+    AC_Imp1 --> MCPServer_Imp1
+    MCPServer_Imp1 -.-> CapabilitiesDB_Imp1
+    AP_Imp1 -.-> CapabilitiesDB_Imp1
+
+    AC_Imp1 --> SubAgent_Imp1
+    SubAgent_Imp1 --> MCPServer_Imp1
+    PAS_Imp1 --> MCPClient_Imp1
+    MCPClient_Imp1 --> MCPServer_Imp1
+    
+    classDef llm fill:#f9f,stroke:#333,stroke-width:2px
+    class AP_Imp1,PAS_Imp1,IP_Imp1 llm
+```
+
+#### Luồng Xử lý (Cải thiện 1)
+```mermaid
+sequenceDiagram
+    participant AP as Action Planner (LLM)
+    participant AC as Agent Coordinator
+    participant SubAgent as MCPJiraAgent
+    participant PAS as PromptAnalyzerService (LLM in SubAgent)
+    participant MCPServer as MCP Server
+
+    Note over AP, MCPServer: Initial phase: Action Planner and/or SubAgent fetch/are aware of detailed MCP capabilities (Tools, Resources, Schemas) from MCP Server.
+
+    AP->>AC: ActionStep (with general prompt)
+    AC->>SubAgent: Execute(prompt)
+    SubAgent->>MCPServer: Request detailed info for relevant actions/tools (if not already cached/known)
+    MCPServer-->>SubAgent: Action Details (URI, description, schema)
+    SubAgent->>PAS: AnalyzePrompt(prompt, ActionDetails)
+    PAS-->>SubAgent: MCPCommand (action_name, parameters based on schema)
+    SubAgent->>MCPServer: Execute MCPCommand
+    MCPServer-->>SubAgent: Result
+```
+
+### Cải thiện 2: Đơn giản hóa kiến trúc bằng cách loại bỏ Sub-Agent
+
+*   **Vấn đề**: Kiến trúc có thể trở nên đơn giản hơn nếu giảm bớt một lớp agent.
+*   **Đề xuất**:
+    1.  **Loại bỏ `Sub-Agent`**: Không cần các `Sub-Agent` chuyên biệt như `MCPJiraAgent` hay `MCPConfluenceAgent` nữa.
+    2.  **`Agent Coordinator` trở thành MCP Client**:
+        *   `Agent Coordinator` sẽ trực tiếp đóng vai trò là một `MCP client`.
+        *   Nó sẽ chịu trách nhiệm lấy danh sách các "actions" (bao gồm `uri`, `description`, `schema`) từ các `MCP server` khác nhau.
+        *   `Agent Coordinator` cung cấp trực tiếp thông tin về các "actions" này cho `Action Planner`.
+    3.  **`Action Planner` quyết định toàn diện**:
+        *   Dựa trên thông tin "action" nhận được, `Action Planner` sẽ tự mình lên kế hoạch, chọn "action" cụ thể cần thực thi trên `MCP server`, và quyết định luôn các "parameters" cho action đó.
+        *   `Agent Coordinator` sau đó chỉ việc thực thi lệnh gọi action đó tới `MCP server` theo chỉ dẫn của `Action Planner`.
+*   **Ưu điểm của Cải thiện 2**:
+    *   Kiến trúc tổng thể gọn nhẹ hơn.
+    *   Logic tương tác với `MCP server` được tập trung tại `Agent Coordinator`.
+    *   `Action Planner` có cái nhìn tổng thể và quyền quyết định cao hơn.
+*   **Điểm cần cân nhắc của Cải thiện 2**:
+    *   `Agent Coordinator` sẽ trở nên rất phức tạp, phải quản lý logic client cho nhiều loại `MCP service`.
+    *   Mất tính chuyên môn hóa, khó khăn hơn khi các `MCP service` có đặc thù giao tiếp quá khác biệt.
+    *   `Action Planner` cần logic phức tạp hơn để xử lý đa dạng các loại action mà không có sự "tiền xử lý" từ `Sub-Agent`.
+
+#### Sơ đồ Thành phần (Cải thiện 2)
+```mermaid
+flowchart TD
+    subgraph CentralAgent_Imp2[Central Agent]
+        AP_Imp2[Action Planner LLM]
+        AC_Imp2[Agent Coordinator]
+        PCR_Imp2[Config Reader]
+        IP_Imp2[Input Processor LLM]
+    end
+
+    MCPServer_Imp2[MCP Server e.g., Jira MCP]
+    CapabilitiesInfo_Imp2[(MCP Action Info: URI, desc, schema)]
+
+    AC_Imp2 --> MCPServer_Imp2
+    MCPServer_Imp2 -.-> CapabilitiesInfo_Imp2
+    AC_Imp2 -.-> CapabilitiesInfo_Imp2
+    
+    IP_Imp2 --> AP_Imp2
+    AP_Imp2 --> AC_Imp2
+    AC_Imp2 --> MCPServer_Imp2
+    
+    classDef llm fill:#f9f,stroke:#333,stroke-width:2px
+    class AP_Imp2,IP_Imp2 llm
+```
+
+#### Luồng Xử lý (Cải thiện 2)
+```mermaid
+sequenceDiagram
+    participant IP as InputProcessor
+    participant AP as Action Planner (LLM)
+    participant AC as Agent Coordinator
+    participant MCPServer as MCP Server
+
+    IP->>AP: ProcessedInput
+    AC->>MCPServer: Request All Available MCP Actions (names, URI, desc, schemas)
+    MCPServer-->>AC: List of MCP Actions
+    Note over AP, AC: AC provides Action List to AP
+    AP->>AC: ActionPlan (Steps define specific MCP action_name and parameters)
+    
+    loop Each ActionStep in ActionPlan
+        AC->>MCPServer: Execute MCPAction (action_name, parameters from ActionStep)
+        MCPServer-->>AC: Result
+    end
+```
+
+### Cải thiện 3: Kiến trúc Tinh gọn Tối ưu cho MCP và Action Planner Thông minh
+
+*   **Tiền đề cốt lõi**: Hệ thống chỉ sử dụng Model Context Protocol (MCP) để thực hiện mọi "action" tương tác với các dịch vụ bên ngoài. Điều này cho phép chúng ta đơn giản hóa đáng kể kiến trúc bằng cách loại bỏ các lớp trung gian không còn cần thiết khi hệ thống hoàn toàn dựa trên MCP.
+*   **Mục tiêu kép**:
+    1.  **Giảm thiểu độ phức tạp kiến trúc**: Loại bỏ các thành phần trung gian không còn cần thiết khi hệ thống hoàn toàn dựa trên MCP.
+    2.  **Tăng hiệu quả và độ chính xác của việc lập kế hoạch (planning)**: `Action Planner` đưa ra quyết định ở mức độ chi tiết và trực tiếp hơn, gắn liền với "năng lực" thực tế của các MCP server.
+
+*   **Các thành phần được loại bỏ hoặc vai trò thay đổi đáng kể**:
+    *   **Các `Sub-Agent` chuyên biệt (ví dụ: `MCPJiraAgent`, `MCPConfluenceAgent`)**: Hoàn toàn được loại bỏ. Logic "hiểu" prompt và "biết" cách gọi MCP của chúng giờ đây được tích hợp vào `Action Planner` (nhờ `MCP Capability Registry`) và logic thực thi MCP được tập trung ở `Agent Coordinator`.
+    *   **`PromptAnalyzerService`**: Được loại bỏ, giúp giảm một tầng xử lý LLM.
+
+*   **Ưu điểm của "Cải thiện 3"**:
+    *   **Kiến trúc tinh gọn và rõ ràng**: Giảm đáng kể số lượng thành phần, làm cho luồng dữ liệu trở nên trực tiếp và dễ hiểu hơn.
+    *   **Lập kế hoạch hiệu quả và chính xác**: `Action Planner` có toàn quyền truy cập vào "năng lực" thực tế của MCP, cho phép tạo ra các kế hoạch tối ưu và giảm thiểu lỗi do thiếu thông tin hoặc hiểu sai về khả năng của các tool.
+    *   **Giảm độ trễ và chi phí LLM**: Loại bỏ ít nhất một bước gọi LLM trung gian (trong `PromptAnalyzerService`), có khả năng tăng tốc độ phản hồi và giảm chi phí vận hành.
+    *   **Tập trung logic MCP**: Việc tương tác với MCP được quản lý bởi `MCPClientService` và `MCP Capability Registry`, giúp việc bảo trì và mở rộng dễ dàng hơn khi có sự thay đổi từ các `MCP Server` hoặc khi muốn tích hợp `MCP Server` mới.
+
+*   **Những điểm cần cân nhắc và phát triển thêm**:
+    *   **Sự phức tạp của `Action Planner`**: `Prompt` và logic của LLM cho `Action Planner` sẽ cần được thiết kế rất cẩn thận để nó có thể xử lý hiệu quả lượng thông tin lớn từ `MCP Capability Registry` và tạo ra các `ActionStep` MCP chi tiết, chính xác.
+    *   **Khởi tạo và duy trì `MCP Capability Registry`**: Cần một cơ chế mạnh mẽ và hiệu quả để khám phá, lưu trữ, và cập nhật thông tin năng lực MCP, đặc biệt nếu các `MCP Server` có thể thay đổi API hoặc năng lực của chúng một cách δυναμικά.
+    *   **Xử lý lỗi MCP**: Logic xử lý lỗi chi tiết khi giao tiếp với `MCP Server` (ví dụ: server không khả dụng, lỗi xác thực, lỗi từ API của dịch vụ đích) cần được xây dựng kỹ lưỡng trong `MCPClientService` và cách `Agent Coordinator`/`Action Planner` phản ứng với các lỗi đó.
+    *   **Migration**: Nếu hệ thống đã có sẵn, việc chuyển đổi sang kiến trúc này đòi hỏi nỗ lực refactor đáng kể.
+
+#### Sơ đồ Thành phần (Cải thiện 3)
+```mermaid
+flowchart TD
+    subgraph CentralAgent_Imp3[Central Agent]
+        AP_Imp3[Action Planner LLM]
+        AC_Imp3[Agent Coordinator]
+        PCR_Imp3[Config Reader]
+        IP_Imp3[Input Processor LLM]
+        MCPCapReg_Imp3[MCP Capability Registry]
+        MCPClientSvc_Imp3[MCPClientService Centralized]
+    end
+
+    MCPServers_Imp3[Multiple MCP Servers Jira, Confluence, etc.]
+
+    MCPServers_Imp3 -->|1. Discovered by/Populates| MCPCapReg_Imp3
+    MCPCapReg_Imp3 --|> Stores: Tools, Resources, Schemas, Descriptions per MCP Server| MCPCapReg_Imp3
+    
+    IP_Imp3 --> AP_Imp3
+    AP_Imp3 -->|2. Uses MCPCapReg_Imp3 for context| MCPCapReg_Imp3
+    AP_Imp3 -->|3. Creates ActionSteps with precise MCP details target server, tool/resource name, formatted params| AC_Imp3
+    
+    AC_Imp3 -->|4. Forwards MCP details from ActionStep to| MCPClientSvc_Imp3
+    MCPClientSvc_Imp3 -->|5. Executes MCP command on target| MCPServers_Imp3
+    
+    classDef llm fill:#f9f,stroke:#333,stroke-width:2px
+    class AP_Imp3,IP_Imp3 llm
+```
+
+#### Luồng Xử lý (Cải thiện 3)
+```mermaid
+sequenceDiagram
+    participant MCPCapReg as MCP Capability Registry
+    participant MCPServers as MCP Servers
+    participant IP as InputProcessor
+    participant AP as Action Planner (LLM)
+    participant AC as Agent Coordinator
+    participant MCPClientSvc as MCPClientService
+
+    MCPCapReg->>MCPServers: Discover/Fetch Capabilities (Tools, Resources, Schemas)
+    MCPServers-->>MCPCapReg: Capabilities Info
+    Note over MCPCapReg: Stores capabilities
+
+    IP->>AP: ProcessedInput
+    AP->>MCPCapReg: Get MCP Capabilities (as context for planning)
+    MCPCapReg-->>AP: Capabilities
+    AP->>AC: ActionPlan (Steps define: mcpTargetServerId, mcpActionType, mcpActionName, mcpParameters)
+    
+    loop Each ActionStep in ActionPlan
+        AC->>MCPClientSvc: ExecuteMCPAction(step.mcpTargetServerId, step.mcpActionType, step.mcpActionName, step.mcpParameters)
+        MCPClientSvc->>MCPServers: (Targeted) MCP Request
+        MCPServers-->>MCPClientSvc: MCP Response
+        MCPClientSvc-->>AC: StepResult
+    end
+```
+
+### Bảng so sánh các giải pháp cải thiện
+
+| Tiêu chí                          | Cải thiện 1 (Nâng cao thông tin)                                  | Cải thiện 2 (Loại bỏ Sub-Agent)                                     | Cải thiện 3 (Kiến trúc Tinh gọn MCP)                                  |
+| --------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **Kiến trúc & Độ phức tạp**     | Vẫn có Sub-Agent chuyên biệt. Thêm logic lấy/quản lý năng lực MCP. | Loại bỏ Sub-Agent. Agent Coordinator phức tạp hơn.                  | Tinh gọn nhất: Loại bỏ Sub-Agent & PromptAnalyzerService.              |
+| **Vai trò Action Planner (LLM)** | Tạo kế hoạch dựa trên kiến thức tổng quan về năng lực MCP.         | Quyết định chi tiết: chọn action MCP cụ thể và parameters.        | Quyết định chi tiết nhất: Tạo ActionStep MCP đầy đủ (target, action, params) dựa trên MCP Capability Registry. |
+| **Tương tác MCP**                 | Sub-Agent (với PromptAnalyzerService LLM) phân tích prompt, tạo và gửi lệnh MCP. | Agent Coordinator lấy thông tin actions, cung cấp cho AP, rồi trực tiếp thực thi lệnh MCP theo chỉ dẫn của AP. | Agent Coordinator nhận lệnh MCP chi tiết từ AP, chuyển cho MCPClientService tập trung để thực thi. |
+| **Thành phần LLM chính**        | - Input Processor<br>- Action Planner<br>- PromptAnalyzerService (trong Sub-Agent)<br>- Result Synthesizer | - Input Processor<br>- Action Planner<br>- Result Synthesizer        | - Input Processor<br>- Action Planner<br>- Result Synthesizer          |
+| **Ưu điểm chính**                 | - Tăng độ chính xác của AP & PAS.<br>- Giữ chuyên môn hóa của Sub-Agent.<br>- Dễ bảo trì/mở rộng MCP. | - Kiến trúc gọn hơn.<br>- Logic MCP tập trung một phần ở AC.<br>- AP có quyền quyết định cao hơn. | - Kiến trúc tinh gọn, rõ ràng nhất.<br>- Lập kế hoạch hiệu quả, chính xác.<br>- Giảm độ trễ/chi phí LLM (ít hơn 1 LLM call).<br>- Logic MCP tập trung, dễ bảo trì/mở rộng. |
+| **Nhược điểm/Cân nhắc**          | - Cần cơ chế cập nhật năng lực MCP.<br>- Tăng chút độ phức tạp quản lý thông tin. | - Agent Coordinator rất phức tạp.<br>- Mất chuyên môn hóa nếu MCP service khác biệt nhiều.<br>- AP cần logic phức tạp hơn nhiều. | - AP (prompt & logic LLM) rất phức tạp.<br>- Cần cơ chế mạnh cho MCP Capability Registry (khám phá, cập nhật).<br>- Cần xử lý lỗi MCP kỹ lưỡng.<br>- Refactor lớn nếu hệ thống đã có sẵn. |
 
 </rewritten_file> 
